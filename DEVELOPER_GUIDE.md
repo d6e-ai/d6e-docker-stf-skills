@@ -1,4 +1,4 @@
-# Creating D6E Skills with Claude/Cursor
+# Creating D6E Docker STFs with Claude/Cursor
 
 A guide for developers using Claude or Cursor to create custom Docker STFs for D6E.
 
@@ -7,7 +7,7 @@ A guide for developers using Claude or Cursor to create custom Docker STFs for D
 - How to use D6E Agent Skills with Claude/Cursor
 - Examples of requesting custom D6E Docker STFs
 - What to expect from AI-generated code
-- How to test and deploy your skills
+- How to test and deploy your Docker STFs
 
 ## 🚀 Quick Start
 

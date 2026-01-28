@@ -7,7 +7,7 @@ This skill teaches how to create custom Docker-based State Transition Functions 
 ## When to Use This Skill
 
 Use this skill when a user requests:
-- "Create a D6E skill that..."
+- "Create a D6E Docker STF that..."
 - "Build a custom STF for D6E that does..."
 - "I need a Docker-based workflow step for D6E that..."
 - "Help me create a data processing function for D6E"
@@ -109,11 +109,11 @@ Content-Type: application/json
 
 ### Step 1: Choose Language and Structure
 
-Create a new directory for the skill:
+Create a new directory for the Docker STF:
 
 ```bash
-mkdir my-d6e-skill
-cd my-d6e-skill
+mkdir my-d6e-stf
+cd my-d6e-stf
 ```
 
 ### Step 2: Implement the Main Script
@@ -326,26 +326,26 @@ docker run --rm -i my-d6e-skill:latest
 
 ```bash
 # Tag for GitHub Container Registry
-docker tag my-d6e-skill:latest ghcr.io/username/my-d6e-skill:latest
+docker tag my-d6e-stf:latest ghcr.io/username/my-d6e-stf:latest
 
 # Login to GHCR
 docker login ghcr.io -u username
 
 # Push
-docker push ghcr.io/username/my-d6e-skill:latest
+docker push ghcr.io/username/my-d6e-stf:latest
 
 # Make package public on GitHub
 ```
 
 ### Step 6: Register in D6E
 
-To use the skill in D6E, users need to:
+To use the Docker STF in D6E, users need to:
 
 1. **Create STF:**
 ```
 Use d6e_create_stf tool with:
-- name: "my-skill"
-- description: "My custom skill"
+- name: "my-stf"
+- description: "My custom Docker STF"
 ```
 
 2. **Create STF Version:**
@@ -354,7 +354,7 @@ Use d6e_create_stf_version tool with:
 - stf_id: (from step 1)
 - version: "1.0.0"
 - runtime: "docker"
-- code: {"image":"ghcr.io/username/my-d6e-skill:latest"}
+- code: {"image":"ghcr.io/username/my-d6e-stf:latest"}
 ```
 
 3. **Set Policies (if SQL access needed):**
@@ -508,7 +508,7 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 ### Example 1: Data Validator
 
-Creates a skill that validates data against rules:
+Creates a Docker STF that validates data against rules:
 
 ```python
 def process(user_input, sources, context):
@@ -532,7 +532,7 @@ def process(user_input, sources, context):
 
 ### Example 2: Report Generator
 
-Creates a skill that generates reports from database data:
+Creates a Docker STF that generates reports from database data:
 
 ```python
 def process(user_input, sources, context):
@@ -565,7 +565,7 @@ def process(user_input, sources, context):
 
 ### Example 3: External API Integration
 
-Creates a skill that fetches data from external API and stores in D6E:
+Creates a Docker STF that fetches data from external API and stores in D6E:
 
 ```python
 import requests
