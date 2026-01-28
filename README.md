@@ -77,8 +77,8 @@ And you'll get a complete implementation including:
 
 ## 🔗 Related Resources
 
-- [D6E Platform](https://github.com/KimuraYu45z/d6e)
-- [D6E Docker Runtime Guide](https://github.com/KimuraYu45z/d6e/blob/main/docs/08-stf-docker-runtime.md)
+- [D6E Platform](https://github.com/d6e-ai/d6e)
+- [D6E Docker Runtime Guide](https://github.com/d6e-ai/d6e/blob/main/docs/08-stf-docker-runtime.md)
 - [Claude Agent Skills Documentation](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
 - [Model Context Protocol](https://modelcontextprotocol.io)
 
@@ -119,4 +119,4 @@ Traditional documentation tells developers **what** to do. Agent Skills teach AI
 
 - [Agent Skills Overview](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
 - [Creating Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/creating)
-- [D6E Documentation](https://github.com/KimuraYu45z/d6e)
+- [D6E Documentation](https://github.com/d6e-ai/d6e)
