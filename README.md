@@ -30,6 +30,8 @@ Teaches how to create custom Docker-based STFs for D6E, including:
 
 ### For Developers
 
+**New to D6E Skills?** Start with the **[Developer Guide](./DEVELOPER_GUIDE.md)** for step-by-step examples!
+
 1. **Open this repository in Claude/Cursor**
 2. **Reference the skill** when asking for help:
    ```
