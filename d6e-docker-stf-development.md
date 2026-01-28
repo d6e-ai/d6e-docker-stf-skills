@@ -647,4 +647,4 @@ def process(user_input, sources, context):
 
 ---
 
-**Note:** This skill is designed for Claude/Cursor AI assistants to help developers create D6E Docker STFs. When a user requests a custom D6E skill, use the patterns and examples in this document to generate appropriate code.
+**Note:** This skill is designed for Claude/Cursor AI assistants to help developers create D6E Docker STFs. When a user requests a custom D6E Docker STF, use the patterns and examples in this document to generate appropriate code.

@@ -18,7 +18,7 @@ Agent Skills are Markdown documents that provide AI assistants with domain-speci
 
 ### [D6E Docker STF Development](./d6e-docker-stf-development.md)
 
-Teaches how to create custom Docker-based STFs for D6E, including:
+Teaches Claude/Cursor how to help developers create custom Docker-based STFs for D6E, including:
 - Input/output JSON formats
 - SQL API integration
 - Multi-language implementations (Python, Node.js, Go)
@@ -36,7 +36,7 @@ Teaches how to create custom Docker-based STFs for D6E, including:
 2. **Reference the skill** when asking for help:
    ```
    Using the D6E Docker STF Development skill,
-   create a data validation skill that checks...
+   create a data validation Docker STF that checks...
    ```
 3. **Claude/Cursor will generate** appropriate code following D6E patterns
 
@@ -64,7 +64,7 @@ When a user requests help with D6E Docker STFs:
 With this Agent Skill loaded, you can ask Claude/Cursor:
 
 ```
-Create a D6E skill that:
+Create a D6E Docker STF that:
 1. Fetches data from an external API
 2. Validates the data
 3. Stores it in a D6E database table
@@ -109,7 +109,7 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ## 🌟 Why Agent Skills for D6E?
 
-Traditional documentation tells developers **what** to do. Agent Skills teach AI assistants **how** to help developers do it correctly. This means:
+Traditional documentation tells developers **what** to do. Agent Skills teach AI assistants **how** to help developers create D6E Docker STFs correctly. This means:
 
 - ✅ **Faster Development**: Claude/Cursor generates correct code instantly
 - ✅ **Fewer Errors**: Follows D6E conventions automatically

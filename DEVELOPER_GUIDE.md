@@ -5,7 +5,7 @@ A guide for developers using Claude or Cursor to create custom Docker STFs for D
 ## 🎯 What You'll Learn
 
 - How to use D6E Agent Skills with Claude/Cursor
-- Examples of requesting custom D6E skills
+- Examples of requesting custom D6E Docker STFs
 - What to expect from AI-generated code
 - How to test and deploy your skills
 
@@ -29,17 +29,17 @@ cd agent-skills
 cursor .  # or your preferred method
 ```
 
-### Step 2: Request a Skill
+### Step 2: Request a Docker STF
 
 Simply ask Claude/Cursor in natural language. The AI will read the Agent Skills document and generate appropriate code.
 
 ## 📝 Example Requests
 
-### Example 1: Data Validation Skill
+### Example 1: Data Validation Docker STF
 
 **Your Request:**
 ```
-Using the D6E Docker STF Development skill, create a data validation skill that:
+Using the D6E Docker STF Development skill, create a data validation Docker STF that:
 1. Accepts an array of records
 2. Validates each record against predefined rules
 3. Returns validation results with error details
@@ -67,7 +67,7 @@ data-validator/
 
 **Your Request:**
 ```
-Create a D6E skill that fetches weather data from OpenWeatherMap API 
+Create a D6E Docker STF that fetches weather data from OpenWeatherMap API 
 and stores it in the database. Include error handling for API failures.
 ```
 
@@ -110,7 +110,7 @@ def process(user_input, sources, context):
 
 **Your Request:**
 ```
-Build a D6E skill that:
+Build a D6E Docker STF that:
 1. Reads data from a source table
 2. Transforms column names (snake_case to camelCase)
 3. Filters out null values
@@ -131,42 +131,42 @@ Complete implementation with:
 ### Pattern 1: Simple Processing
 
 ```
-Create a D6E skill that [does something simple]
+Create a D6E Docker STF that [does something simple]
 ```
 
 Example:
 ```
-Create a D6E skill that converts timestamps to different timezones
+Create a D6E Docker STF that converts timestamps to different timezones
 ```
 
 ### Pattern 2: Database Operations
 
 ```
-Create a D6E skill that [reads/writes data] with [specific conditions]
+Create a D6E Docker STF that [reads/writes data] with [specific conditions]
 ```
 
 Example:
 ```
-Create a D6E skill that archives old records by moving them from 
+Create a D6E Docker STF that archives old records by moving them from 
 the main table to an archive table if they're older than 90 days
 ```
 
 ### Pattern 3: External Integration
 
 ```
-Create a D6E skill that integrates with [external service] to [do something]
+Create a D6E Docker STF that integrates with [external service] to [do something]
 ```
 
 Example:
 ```
-Create a D6E skill that integrates with SendGrid to send email
+Create a D6E Docker STF that integrates with SendGrid to send email
 notifications when certain conditions are met in the database
 ```
 
 ### Pattern 4: Complex Workflow
 
 ```
-Create a D6E skill that:
+Create a D6E Docker STF that:
 1. [Step 1]
 2. [Step 2]
 3. [Step 3]
@@ -175,7 +175,7 @@ Include [specific requirements]
 
 Example:
 ```
-Create a D6E skill that:
+Create a D6E Docker STF that:
 1. Fetches user activity from the events table
 2. Calculates engagement scores
 3. Updates the users table with new scores
@@ -185,7 +185,7 @@ Include proper error handling and logging
 
 ## ✅ What to Check
 
-After Claude/Cursor generates your skill:
+After Claude/Cursor generates your Docker STF:
 
 ### 1. Input/Output Format
 
@@ -230,7 +230,7 @@ Verify logs go to stderr:
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 ```
 
-## 🧪 Testing Your Skill
+## 🧪 Testing Your Docker STF
 
 ### Local Test
 
@@ -313,17 +313,17 @@ Add input validation for email addresses
 
 Specify your preferred language:
 ```
-Create a D6E skill in Go that...
+Create a D6E Docker STF in Go that...
 ```
 ```
-Create a D6E skill using Node.js with TypeScript that...
+Create a D6E Docker STF using Node.js with TypeScript that...
 ```
 
 ### Tip 3: Include Context
 
 Provide context for better results:
 ```
-Create a D6E skill for an e-commerce platform that 
+Create a D6E Docker STF for an e-commerce platform that 
 calculates shipping costs based on weight, destination,
 and carrier. We use USPS, FedEx, and UPS.
 ```
@@ -335,11 +335,11 @@ Ask for usage examples:
 Also provide example input JSON for testing
 ```
 
-### Tip 5: Multi-Operation Skills
+### Tip 5: Multi-Operation Docker STFs
 
-Create skills with multiple operations:
+Create Docker STFs with multiple operations:
 ```
-Create a D6E skill with three operations:
+Create a D6E Docker STF with three operations:
 1. 'validate' - validates data format
 2. 'transform' - transforms data structure  
 3. 'enrich' - adds external data
@@ -351,8 +351,8 @@ Create a D6E skill with three operations:
 
 **Solution:** Be more specific in your request
 ```
-❌ Create a data processing skill
-✅ Create a skill that validates email addresses using regex,
+❌ Create a data processing Docker STF
+✅ Create a Docker STF that validates email addresses using regex,
    checks domain MX records, and returns validation status
 ```
 
@@ -384,36 +384,36 @@ Add detailed logging to stderr for debugging
 ### Custom Base Images
 
 ```
-Create a D6E skill using a custom base image with 
+Create a D6E Docker STF using a custom base image with 
 TensorFlow for ML inference
 ```
 
 ### Multi-Stage Builds
 
 ```
-Create a D6E skill with a multi-stage Dockerfile to 
+Create a D6E Docker STF with a multi-stage Dockerfile to 
 minimize image size
 ```
 
 ### Environment Variables
 
 ```
-Create a D6E skill that uses environment variables for
+Create a D6E Docker STF that uses environment variables for
 configuration (API keys, endpoints, etc.)
 ```
 
 ### Batch Processing
 
 ```
-Create a D6E skill that processes data in batches of 
+Create a D6E Docker STF that processes data in batches of 
 100 records to handle large datasets efficiently
 ```
 
 ## 🎓 Learning Path
 
-1. **Start Simple:** Create a basic echo skill
-2. **Add Database:** Create a skill that queries data
-3. **Add Logic:** Create a skill with business logic
+1. **Start Simple:** Create a basic echo Docker STF
+2. **Add Database:** Create a Docker STF that queries data
+3. **Add Logic:** Create a Docker STF with business logic
 4. **External API:** Integrate with external services
 5. **Complex Workflow:** Multi-step processing
 
@@ -426,6 +426,6 @@ Create a D6E skill that processes data in batches of
 
 ---
 
-**Happy Skill Building! 🎉**
+**Happy Docker STF Building! 🎉**
 
 Have questions? Open an issue on the [Agent Skills repository](https://github.com/d6e-ai/agent-skills/issues).
