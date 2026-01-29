@@ -1,4 +1,8 @@
-# D6E Agent Skills
+# D6E Docker STF Skills
+
+[![Skills](https://img.shields.io/badge/skills.sh-d6e--docker--stf--skills-blue)](https://skills.sh)
+[![GitHub](https://img.shields.io/github/stars/d6e-ai/d6e-docker-stf-skills?style=social)](https://github.com/d6e-ai/d6e-docker-stf-skills)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Claude/Cursor Agent Skills for developing custom D6E Docker STFs.
 
@@ -27,6 +31,48 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 - Best practices and security guidelines
 - Common patterns and examples
 - Troubleshooting guide
+
+## 📦 Installation
+
+### Quick Install (Recommended)
+
+Install this skill using the skills.sh CLI:
+
+```bash
+npx skills add d6e-ai/d6e-docker-stf-skills
+```
+
+This will automatically set up the skill in your Cursor environment.
+
+### Manual Installation
+
+#### For Cursor
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   ```
+
+2. **Add to Cursor:**
+   - Open Cursor Settings (Cmd/Ctrl + ,)
+   - Navigate to "Features" → "Agent Skills"
+   - Add skill directory: `/path/to/d6e-docker-stf-skills/skills/d6e-docker-stf-development`
+
+3. **Verify installation:**
+   - Open Composer (Cmd/Ctrl + I)
+   - Type `@skills` to see available skills
+   - You should see "d6e-docker-stf-development"
+
+#### For Claude Code
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   ```
+
+2. **Reference the skill:**
+   - In your project, reference `@skills/d6e-docker-stf-development/SKILL.md`
+   - Claude will automatically load the skill content
 
 ## 🚀 How to Use
 
@@ -185,6 +231,7 @@ cd examples/echo-stf
 
 ### External Resources
 
+- [skills.sh](https://skills.sh) - The Open Agent Skills Ecosystem
 - [D6E Platform](https://github.com/d6e-ai/d6e) - D6E main repository
 - [D6E Docker Runtime Guide](https://github.com/d6e-ai/d6e/blob/main/docs/08-stf-docker-runtime.md) - Docker Runtime details
 - [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Sample Docker STF
