@@ -28,7 +28,7 @@ A collection of ready-to-use prompts for Cursor and Claude Code.
 1. Launch Claude Code
 2. Open the project folder
 3. Paste one of the prompts below
-4. Reference `@skills/d6e-docker-stf-development.md` in your prompt
+4. Reference `@skills/d6e-docker-stf-development/SKILL.md` in your prompt
 5. Review the generated code
 
 ---
@@ -493,7 +493,7 @@ Required files:
 ### Efficient Use with Cursor
 
 1. **Leverage Composer mode**: Generate multiple files at once
-2. **Use @mentions**: Reference `@skills/d6e-docker-stf-development.md`
+2. **Use @mentions**: Reference `@skills/d6e-docker-stf-development/SKILL.md`
 3. **Iterative improvement**: Start with simple implementation, add features gradually
 4. **Code review**: Verify generated code for security and best practices
 
@@ -522,7 +522,7 @@ The prompts above can be customized to fit your requirements. Adjust the followi
 
 This prompt collection is continuously being improved. Please provide feedback through:
 
-- GitHub Issues: https://github.com/d6e-ai/agent-skills/issues
+- GitHub Issues: https://github.com/d6e-ai/d6e-docker-stf-skills/issues
 - Pull Requests: Add new prompt examples
 - Discussions: Share best practices
 

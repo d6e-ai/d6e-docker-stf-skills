@@ -17,7 +17,7 @@ Agent Skills are Markdown documents that provide AI assistants with domain-speci
 
 ## 🎯 Available Skills
 
-### [D6E Docker STF Development](./skills/d6e-docker-stf-development.md)
+### [D6E Docker STF Development](./skills/d6e-docker-stf-development/SKILL.md)
 
 Teaches Claude/Cursor how to help developers create custom Docker-based STFs for D6E, including:
 
@@ -39,8 +39,8 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 1. **Open this repository in Cursor**
 
    ```bash
-   git clone https://github.com/d6e-ai/agent-skills.git
-   cd agent-skills
+   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   cd d6e-docker-stf-skills
    cursor .
    ```
 
@@ -67,7 +67,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 2. **Reference the skill document**
 
    ```
-   Using @skills/d6e-docker-stf-development.md, create a simple Echo Docker STF.
+   Using @skills/d6e-docker-stf-development/SKILL.md, create a simple Echo Docker STF.
    ```
 
 3. **Review and test the generated code**
@@ -81,7 +81,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 - **[AI Prompts](./docs/AI-PROMPTS.md)** - Copy-paste prompt collection
 - **[Testing Guide](./docs/TESTING.md)** - Testing methods
 - **[Publishing Guide](./docs/PUBLISHING.md)** - How to publish Docker images
-- **[D6E Docker STF Development Skill](./skills/d6e-docker-stf-development.md)** - Complete skill document
+- **[D6E Docker STF Development Skill](./skills/d6e-docker-stf-development/SKILL.md)** - Complete skill document
 
 #### 🔄 Workflow
 
@@ -94,7 +94,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 When a user requests help with D6E Docker STFs:
 
-1. Read the relevant skill document (`skills/d6e-docker-stf-development.md`)
+1. Read the relevant skill document (`skills/d6e-docker-stf-development/SKILL.md`)
 2. Apply the patterns and guidelines
 3. Generate code that follows D6E conventions
 4. Include necessary files (Dockerfile, requirements.txt, etc.)
@@ -259,7 +259,7 @@ Cursor automatically recognizes `.md` files as Agent Skills.
 3. **Use @mention feature (optional)**
 
    ```
-   Using @skills/d6e-docker-stf-development.md, create an Echo Docker STF.
+   Using @skills/d6e-docker-stf-development/SKILL.md, create an Echo Docker STF.
    ```
 
 4. **Also available in Chat**
@@ -274,7 +274,7 @@ In Claude Code, you must explicitly reference skill documents.
 2. **Reference skill document**
 
    ```
-   Using @skills/d6e-docker-stf-development.md, implement [your requirements].
+   Using @skills/d6e-docker-stf-development/SKILL.md, implement [your requirements].
    ```
 
 3. **Or add skill document to context**

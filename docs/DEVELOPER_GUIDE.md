@@ -17,7 +17,7 @@ Documents to read before or alongside this guide:
 - **[AI Prompts](./AI-PROMPTS.md)** - Copy-paste ready prompt collection
 - **[Testing Guide](./TESTING.md)** - Detailed testing methods
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish Docker images
-- **[D6E Docker STF Development Skill](../skills/d6e-docker-stf-development.md)** - Complete skill document
+- **[D6E Docker STF Development Skill](../skills/d6e-docker-stf-development/SKILL.md)** - Complete skill document
 
 ## 🚀 Quick Start
 
@@ -32,8 +32,8 @@ Documents to read before or alongside this guide:
 
 ```bash
 # Clone the repository
-git clone https://github.com/d6e-ai/agent-skills.git
-cd agent-skills
+git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+cd d6e-docker-stf-skills
 
 # Open in Cursor or load in Claude Code
 cursor .  # or your preferred method
@@ -463,11 +463,11 @@ Create a D6E Docker STF that processes data in batches of
 - **[AI Prompts Collection](./AI-PROMPTS.md)** - Ready-to-use prompt collection (copy-paste OK)
 - **[Testing Guide](./TESTING.md)** - From local tests to integration tests and E2E tests
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish to GitHub Container Registry and Docker Hub
-- **[D6E Docker STF Development Skill](../skills/d6e-docker-stf-development.md)** - Complete skill document (referenced by AI)
+- **[D6E Docker STF Development Skill](../skills/d6e-docker-stf-development/SKILL.md)** - Complete skill document (referenced by AI)
 
 ### External Resources
 
-- [D6E Agent Skills Repository](https://github.com/d6e-ai/agent-skills) - This repository
+- [D6E Docker STF Skills Repository](https://github.com/d6e-ai/d6e-docker-stf-skills) - This repository
 - [D6E Documentation](https://github.com/d6e-ai/d6e) - D6E platform documentation
 - [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Real Docker STF sample
 - [Claude Agent Skills Guide](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Official Agent Skills guide
@@ -487,4 +487,4 @@ Create a D6E Docker STF that processes data in batches of
 
 **Happy Docker STF Building! 🎉**
 
-Have questions? Open an issue on the [Agent Skills repository](https://github.com/d6e-ai/agent-skills/issues).
+Have questions? Open an issue on the [D6E Docker STF Skills repository](https://github.com/d6e-ai/d6e-docker-stf-skills/issues).

@@ -271,7 +271,7 @@ Build your own Docker STF based on this example:
 
 - [Quick Start Guide](../../docs/QUICKSTART.md) - 5-minute quick start
 - [Developer Guide](../../docs/DEVELOPER_GUIDE.md) - Detailed development guide
-- [D6E Docker STF Development Skill](../../skills/d6e-docker-stf-development.md) - Complete skill document
+- [D6E Docker STF Development Skill](../../skills/d6e-docker-stf-development/SKILL.md) - Complete skill document
 - [Testing Guide](../../docs/TESTING.md) - Testing methods
 - [Publishing Guide](../../docs/PUBLISHING.md) - How to publish
 

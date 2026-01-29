@@ -74,7 +74,7 @@ We welcome the following types of contributions:
 
 1. **Fork the repository**
 
-   - Open [agent-skills](https://github.com/d6e-ai/agent-skills) on GitHub
+   - Open [d6e-docker-stf-skills](https://github.com/d6e-ai/d6e-docker-stf-skills) on GitHub
    - Click the "Fork" button in the top right
 
 2. **Clone**
@@ -87,7 +87,7 @@ We welcome the following types of contributions:
 3. **Add upstream**
 
    ```bash
-   git remote add upstream https://github.com/d6e-ai/agent-skills.git
+   git remote add upstream https://github.com/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 4. **Fetch latest changes**
@@ -506,4 +506,4 @@ Your contributions help the entire D6E community.
 
 **Happy Contributing! 🎉**
 
-If you have any questions, feel free to create an [Issue](https://github.com/d6e-ai/agent-skills/issues)!
+If you have any questions, feel free to create an [Issue](https://github.com/d6e-ai/d6e-docker-stf-skills/issues)!
