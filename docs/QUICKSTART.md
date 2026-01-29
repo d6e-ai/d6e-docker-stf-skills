@@ -40,7 +40,7 @@ Requirements:
 - Include error handling
 - Include Dockerfile, requirements.txt, and README.md
 
-Location: ./examples/echo-stf/
+Location: ../examples/echo-stf/
 ```
 
 **For Claude Code:**
@@ -48,7 +48,7 @@ Location: ./examples/echo-stf/
 1. Paste this in the chat window:
 
 ```
-Using @d6e-docker-stf-development.md, create a simple Echo Docker STF.
+Using @skills/d6e-docker-stf-development.md, create a simple Echo Docker STF.
 
 Requirements: same as above
 ```
@@ -217,14 +217,14 @@ Include tests for each operation.
 ### Basic Guides
 
 - **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed development guide
-- **[D6E Docker STF Development Skill](./d6e-docker-stf-development.md)** - Complete skill document
+- **[D6E Docker STF Development Skill](../skills/d6e-docker-stf-development.md)** - Complete skill document
 - **[AI Prompts](./AI-PROMPTS.md)** - Copy-paste prompt collection
 
 ### Advanced Topics
 
 - **[Testing Guide](./TESTING.md)** - Testing procedures
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish Docker images
-- **[Best Practices](./d6e-docker-stf-development.md#best-practices)** - Best practices
+- **[Best Practices](../skills/d6e-docker-stf-development.md#best-practices)** - Best practices
 
 ### Sample Projects
 
@@ -319,7 +319,7 @@ Include error handling and logging.
 
 ### 1. Always Reference Agent Skills
 
-In Cursor, mentioning `@d6e-docker-stf-development.md` helps the AI reference the skill document.
+In Cursor, mentioning `@skills/d6e-docker-stf-development.md` helps the AI reference the skill document.
 
 ### 2. Develop Incrementally
 
@@ -376,7 +376,7 @@ These are automatically loaded and can be referenced by the AI assistant.
 In Claude Code, you must explicitly reference skill documents:
 
 ```
-Using @d6e-docker-stf-development.md, implement [your requirements].
+Using @skills/d6e-docker-stf-development.md, implement [your requirements].
 ```
 
 ---

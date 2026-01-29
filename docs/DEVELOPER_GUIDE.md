@@ -17,7 +17,7 @@ Documents to read before or alongside this guide:
 - **[AI Prompts](./AI-PROMPTS.md)** - Copy-paste ready prompt collection
 - **[Testing Guide](./TESTING.md)** - Detailed testing methods
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish Docker images
-- **[D6E Docker STF Development Skill](./d6e-docker-stf-development.md)** - Complete skill document
+- **[D6E Docker STF Development Skill](../skills/d6e-docker-stf-development.md)** - Complete skill document
 
 ## 🚀 Quick Start
 
@@ -463,7 +463,7 @@ Create a D6E Docker STF that processes data in batches of
 - **[AI Prompts Collection](./AI-PROMPTS.md)** - Ready-to-use prompt collection (copy-paste OK)
 - **[Testing Guide](./TESTING.md)** - From local tests to integration tests and E2E tests
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish to GitHub Container Registry and Docker Hub
-- **[D6E Docker STF Development Skill](./d6e-docker-stf-development.md)** - Complete skill document (referenced by AI)
+- **[D6E Docker STF Development Skill](../skills/d6e-docker-stf-development.md)** - Complete skill document (referenced by AI)
 
 ### External Resources
 

@@ -17,7 +17,7 @@ Agent Skills are Markdown documents that provide AI assistants with domain-speci
 
 ## 🎯 Available Skills
 
-### [D6E Docker STF Development](./d6e-docker-stf-development.md)
+### [D6E Docker STF Development](./skills/d6e-docker-stf-development.md)
 
 Teaches Claude/Cursor how to help developers create custom Docker-based STFs for D6E, including:
 
@@ -32,7 +32,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 ### Quick Start (5 minutes)
 
-**New to D6E Docker STFs?** Start with the **[Quick Start Guide](./QUICKSTART.md)** to create your first Docker STF in 5 minutes!
+**New to D6E Docker STFs?** Start with the **[Quick Start Guide](./docs/QUICKSTART.md)** to create your first Docker STF in 5 minutes!
 
 ### For Cursor Users
 
@@ -46,7 +46,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 2. **Open Composer (Cmd/Ctrl + I)**
 
-3. **Paste a prompt** (choose from [AI Prompts](./AI-PROMPTS.md))
+3. **Paste a prompt** (choose from [AI Prompts](./docs/AI-PROMPTS.md))
 
    ```
    Using the D6E Docker STF Development skill, create a Docker STF for data validation.
@@ -67,7 +67,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 2. **Reference the skill document**
 
    ```
-   Using @d6e-docker-stf-development.md, create a simple Echo Docker STF.
+   Using @skills/d6e-docker-stf-development.md, create a simple Echo Docker STF.
    ```
 
 3. **Review and test the generated code**
@@ -76,12 +76,12 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 #### 📖 Documentation
 
-- **[Quick Start](./QUICKSTART.md)** - Create a Docker STF in 5 minutes
-- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed development guide
-- **[AI Prompts](./AI-PROMPTS.md)** - Copy-paste prompt collection
-- **[Testing Guide](./TESTING.md)** - Testing methods
-- **[Publishing Guide](./PUBLISHING.md)** - How to publish Docker images
-- **[D6E Docker STF Development Skill](./d6e-docker-stf-development.md)** - Complete skill document
+- **[Quick Start](./docs/QUICKSTART.md)** - Create a Docker STF in 5 minutes
+- **[Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Detailed development guide
+- **[AI Prompts](./docs/AI-PROMPTS.md)** - Copy-paste prompt collection
+- **[Testing Guide](./docs/TESTING.md)** - Testing methods
+- **[Publishing Guide](./docs/PUBLISHING.md)** - How to publish Docker images
+- **[D6E Docker STF Development Skill](./skills/d6e-docker-stf-development.md)** - Complete skill document
 
 #### 🔄 Workflow
 
@@ -94,7 +94,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 When a user requests help with D6E Docker STFs:
 
-1. Read the relevant skill document (`d6e-docker-stf-development.md`)
+1. Read the relevant skill document (`skills/d6e-docker-stf-development.md`)
 2. Apply the patterns and guidelines
 3. Generate code that follows D6E conventions
 4. Include necessary files (Dockerfile, requirements.txt, etc.)
@@ -162,7 +162,7 @@ Requirements:
 - Error handling and retry logic
 ```
 
-For more prompt examples, see **[AI Prompts](./AI-PROMPTS.md)**.
+For more prompt examples, see **[AI Prompts](./docs/AI-PROMPTS.md)**.
 
 ### Real Sample Code
 
@@ -177,11 +177,11 @@ cd examples/echo-stf
 
 ### Documentation
 
-- **[Quick Start Guide](./QUICKSTART.md)** - 5-minute quick start
-- **[AI Prompts Collection](./AI-PROMPTS.md)** - Ready-to-use prompts
-- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed development guide
-- **[Testing Guide](./TESTING.md)** - Comprehensive testing methods
-- **[Publishing Guide](./PUBLISHING.md)** - How to publish images
+- **[Quick Start Guide](./docs/QUICKSTART.md)** - 5-minute quick start
+- **[AI Prompts Collection](./docs/AI-PROMPTS.md)** - Ready-to-use prompts
+- **[Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Detailed development guide
+- **[Testing Guide](./docs/TESTING.md)** - Comprehensive testing methods
+- **[Publishing Guide](./docs/PUBLISHING.md)** - How to publish images
 
 ### External Resources
 
@@ -195,7 +195,7 @@ cd examples/echo-stf
 
 Contributions are welcome! Help us add new skills or improve existing ones.
 
-For detailed guidelines, see **[CONTRIBUTING.md](./CONTRIBUTING.md)**.
+For detailed guidelines, see **[CONTRIBUTING.md](./docs/CONTRIBUTING.md)**.
 
 ### Simple Contribution Steps
 
@@ -223,7 +223,7 @@ New skills should include:
 - **Troubleshooting**: Troubleshooting
 - **Reference**: Technical specifications
 
-For details, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+For details, see [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 ## 📝 License
 
@@ -259,7 +259,7 @@ Cursor automatically recognizes `.md` files as Agent Skills.
 3. **Use @mention feature (optional)**
 
    ```
-   Using @d6e-docker-stf-development.md, create an Echo Docker STF.
+   Using @skills/d6e-docker-stf-development.md, create an Echo Docker STF.
    ```
 
 4. **Also available in Chat**
@@ -274,7 +274,7 @@ In Claude Code, you must explicitly reference skill documents.
 2. **Reference skill document**
 
    ```
-   Using @d6e-docker-stf-development.md, implement [your requirements].
+   Using @skills/d6e-docker-stf-development.md, implement [your requirements].
    ```
 
 3. **Or add skill document to context**
@@ -314,11 +314,11 @@ Reason: Lacks specificity and expected results are unclear
 
 ### This Repository
 
-- **[Quick Start](./QUICKSTART.md)** - Get started in 5 minutes
-- **[AI Prompts](./AI-PROMPTS.md)** - Prompt examples
-- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed guide
-- **[Testing Guide](./TESTING.md)** - Testing methods
-- **[Publishing Guide](./PUBLISHING.md)** - Publishing methods
+- **[Quick Start](./docs/QUICKSTART.md)** - Get started in 5 minutes
+- **[AI Prompts](./docs/AI-PROMPTS.md)** - Prompt examples
+- **[Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Detailed guide
+- **[Testing Guide](./docs/TESTING.md)** - Testing methods
+- **[Publishing Guide](./docs/PUBLISHING.md)** - Publishing methods
 
 ### External Resources
 

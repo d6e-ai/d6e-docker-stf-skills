@@ -668,11 +668,11 @@ def process(user_input, sources, context):
 
 Guides and resources for developers:
 
-- **[Quick Start Guide](./QUICKSTART.md)** - Steps to create your first Docker STF in 5 minutes
-- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed development guide with practical examples
-- **[AI Prompts Collection](./AI-PROMPTS.md)** - Copy-paste ready prompt collection
-- **[Testing Guide](./TESTING.md)** - Local tests, integration tests, and E2E tests
-- **[Publishing Guide](./PUBLISHING.md)** - Publishing steps to GitHub Container Registry and Docker Hub
+- **[Quick Start Guide](../docs/QUICKSTART.md)** - Steps to create your first Docker STF in 5 minutes
+- **[Developer Guide](../docs/DEVELOPER_GUIDE.md)** - Detailed development guide with practical examples
+- **[AI Prompts Collection](../docs/AI-PROMPTS.md)** - Copy-paste ready prompt collection
+- **[Testing Guide](../docs/TESTING.md)** - Local tests, integration tests, and E2E tests
+- **[Publishing Guide](../docs/PUBLISHING.md)** - Publishing steps to GitHub Container Registry and Docker Hub
 
 ### D6E Official Documentation
 
@@ -706,7 +706,7 @@ Working Docker STF examples:
 4. Include all necessary files (Dockerfile, dependencies, README)
 5. Provide clear testing instructions
 6. Reference the appropriate documentation for more details:
-   - For quick examples: [Quick Start Guide](./QUICKSTART.md)
-   - For detailed guidance: [Developer Guide](./DEVELOPER_GUIDE.md)
-   - For testing: [Testing Guide](./TESTING.md)
-   - For publishing: [Publishing Guide](./PUBLISHING.md)
+   - For quick examples: [Quick Start Guide](../docs/QUICKSTART.md)
+   - For detailed guidance: [Developer Guide](../docs/DEVELOPER_GUIDE.md)
+   - For testing: [Testing Guide](../docs/TESTING.md)
+   - For publishing: [Publishing Guide](../docs/PUBLISHING.md)
