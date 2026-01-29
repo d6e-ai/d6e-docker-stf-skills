@@ -12,6 +12,7 @@ Docker STFs are containerized applications that execute as workflow steps in D6E
 ## When to Use
 
 Apply this skill when users request:
+
 - "Create a D6E Docker STF that..."
 - "Build a custom STF for D6E that..."
 - "I need a Docker-based workflow step..."
@@ -45,6 +46,7 @@ Docker STFs receive this JSON via stdin:
 ### Output Format
 
 **Success:**
+
 ```json
 {
   "output": {
@@ -55,6 +57,7 @@ Docker STFs receive this JSON via stdin:
 ```
 
 **Error:**
+
 ```json
 {
   "error": "Error message",
@@ -69,6 +72,7 @@ Execute SQL via internal API:
 **Endpoint:** `POST /api/v1/workspaces/{workspace_id}/sql`
 
 **Headers:**
+
 ```
 Authorization: Bearer {api_token}
 X-Internal-Bypass: true
@@ -77,11 +81,13 @@ X-STF-ID: {stf_id}
 ```
 
 **Request:**
+
 ```json
-{"sql": "SELECT * FROM my_table LIMIT 10"}
+{ "sql": "SELECT * FROM my_table LIMIT 10" }
 ```
 
 **Restrictions:**
+
 - No DDL (CREATE, DROP, ALTER)
 - Policy-controlled access
 - Workspace scope only
@@ -91,6 +97,7 @@ X-STF-ID: {stf_id}
 ### Python Implementation
 
 **main.py:**
+
 ```python
 #!/usr/bin/env python3
 import sys
@@ -118,10 +125,10 @@ def main():
     try:
         input_data = json.load(sys.stdin)
         user_input = input_data["input"]
-        
+
         # Your business logic here
         result = {"status": "success", "message": "Processed"}
-        
+
         print(json.dumps({"output": result}))
     except Exception as e:
         logging.error(f"Error: {str(e)}", exc_info=True)
@@ -133,6 +140,7 @@ if __name__ == "__main__":
 ```
 
 **Dockerfile:**
+
 ```dockerfile
 FROM python:3.11-slim
 WORKDIR /app
@@ -144,6 +152,7 @@ ENTRYPOINT ["python3", "main.py"]
 ```
 
 **requirements.txt:**
+
 ```
 requests>=2.31.0
 ```
@@ -151,8 +160,9 @@ requests>=2.31.0
 ### Node.js Implementation
 
 **index.js:**
+
 ```javascript
-const axios = require('axios');
+const axios = require("axios");
 
 async function executeSql(apiUrl, apiToken, workspaceId, stfId, sql) {
   const response = await axios.post(
@@ -160,12 +170,12 @@ async function executeSql(apiUrl, apiToken, workspaceId, stfId, sql) {
     { sql },
     {
       headers: {
-        'Authorization': `Bearer ${apiToken}`,
-        'X-Internal-Bypass': 'true',
-        'X-Workspace-ID': workspaceId,
-        'X-STF-ID': stfId,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${apiToken}`,
+        "X-Internal-Bypass": "true",
+        "X-Workspace-ID": workspaceId,
+        "X-STF-ID": stfId,
+        "Content-Type": "application/json",
+      },
     }
   );
   return response.data;
@@ -175,26 +185,28 @@ async function main() {
   try {
     const input = await readStdin();
     const data = JSON.parse(input);
-    
+
     // Your business logic here
-    const result = { status: 'success', message: 'Processed' };
-    
+    const result = { status: "success", message: "Processed" };
+
     console.log(JSON.stringify({ output: result }));
   } catch (error) {
-    console.error('Error:', error.message);
-    console.log(JSON.stringify({
-      error: error.message,
-      type: error.name
-    }));
+    console.error("Error:", error.message);
+    console.log(
+      JSON.stringify({
+        error: error.message,
+        type: error.name,
+      })
+    );
     process.exit(1);
   }
 }
 
 function readStdin() {
   return new Promise((resolve) => {
-    let data = '';
-    process.stdin.on('data', chunk => data += chunk);
-    process.stdin.on('end', () => resolve(data));
+    let data = "";
+    process.stdin.on("data", (chunk) => (data += chunk));
+    process.stdin.on("end", () => resolve(data));
   });
 }
 
@@ -202,6 +214,7 @@ main();
 ```
 
 **Dockerfile:**
+
 ```dockerfile
 FROM node:18-slim
 WORKDIR /app
@@ -227,18 +240,21 @@ When creating a Docker STF, ensure:
 ## Best Practices
 
 ### Security
+
 - Never log sensitive data (tokens, passwords)
 - Validate all user inputs
 - Use parameterized SQL queries
 - Keep dependencies up-to-date
 
 ### Performance
+
 - Use multi-stage builds to reduce image size
 - Minimize dependencies
 - Add `.dockerignore` to exclude unnecessary files
 - Cache pip/npm installations
 
 ### Error Handling
+
 ```python
 try:
     # Your logic
@@ -257,6 +273,7 @@ except Exception as e:
 ```
 
 ### Logging
+
 ```python
 import logging
 
@@ -276,16 +293,17 @@ logging.error("Failed to process", exc_info=True)
 ## Common Patterns
 
 ### Data Validation Pattern
+
 ```python
 def validate_input(user_input):
     required_fields = ["operation", "table_name"]
     for field in required_fields:
         if field not in user_input:
             raise ValueError(f"Missing required field: {field}")
-    
+
     if user_input["operation"] not in ["query", "insert", "update"]:
         raise ValueError(f"Invalid operation: {user_input['operation']}")
-    
+
     return True
 
 # Usage
@@ -297,6 +315,7 @@ except ValueError as e:
 ```
 
 ### Database Query Pattern
+
 ```python
 def safe_query(api_context, table_name, filters):
     """Execute a safe parameterized query"""
@@ -307,10 +326,10 @@ def safe_query(api_context, table_name, filters):
         if not key.isidentifier():
             raise ValueError(f"Invalid column name: {key}")
         where_conditions.append(f"{key} = '{value}'")
-    
+
     where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
     sql = f"SELECT * FROM {table_name} WHERE {where_clause} LIMIT 100"
-    
+
     return execute_sql(
         api_context["api_url"],
         api_context["api_token"],
@@ -321,6 +340,7 @@ def safe_query(api_context, table_name, filters):
 ```
 
 ### External API Pattern
+
 ```python
 import requests
 from requests.adapters import HTTPAdapter
@@ -355,6 +375,7 @@ def call_external_api(url, params):
 ## Testing Locally
 
 ### Build and Test
+
 ```bash
 # Build image
 docker build -t my-stf:latest .
@@ -374,6 +395,7 @@ echo '{
 ```
 
 ### Debug Mode
+
 ```bash
 # Run with interactive shell
 docker run --rm -it --entrypoint /bin/bash my-stf:latest
@@ -392,6 +414,7 @@ docker run --rm -i my-stf:latest < input.json 2>&1 | tee output.log
 **Cause:** STF doesn't have permission to access the table.
 
 **Solution:** Create policies:
+
 ```javascript
 // Create policy group
 d6e_create_policy_group({ name: "my-stf-group" });
@@ -400,7 +423,7 @@ d6e_create_policy_group({ name: "my-stf-group" });
 d6e_add_member_to_policy_group({
   policy_group_id: "{group_id}",
   member_type: "stf",
-  member_id: "{stf_id}"
+  member_id: "{stf_id}",
 });
 
 // Grant access
@@ -408,7 +431,7 @@ d6e_create_policy({
   policy_group_id: "{group_id}",
   table_name: "my_table",
   operation: "select",
-  mode: "allow"
+  mode: "allow",
 });
 ```
 
@@ -417,6 +440,7 @@ d6e_create_policy({
 **Cause:** Output not in correct JSON format.
 
 **Solution:** Always use `{"output": {...}}` format:
+
 ```python
 # ✅ Correct
 print(json.dumps({"output": {"status": "success"}}))
@@ -430,12 +454,14 @@ print(json.dumps({"status": "success"}))
 **Cause:** Image not accessible from D6E API server.
 
 **Solution:**
+
 1. Publish to container registry (GitHub, Docker Hub)
 2. Or ensure same Docker daemon as D6E API server
 
 ### Issue: Large image size
 
 **Solution:** Use multi-stage builds:
+
 ```dockerfile
 # Build stage
 FROM python:3.11 AS builder
@@ -466,6 +492,7 @@ my-stf/
 ```
 
 **.dockerignore:**
+
 ```
 .git
 .gitignore
@@ -480,8 +507,9 @@ node_modules/
 ## Additional Resources
 
 For detailed information:
+
 - Complete API reference: [reference.md](reference.md)
 - More implementation examples: [examples.md](examples.md)
-- Quick start guide: [../docs/QUICKSTART.md](../docs/QUICKSTART.md)
-- Testing guide: [../docs/TESTING.md](../docs/TESTING.md)
-- Publishing guide: [../docs/PUBLISHING.md](../docs/PUBLISHING.md)
+- Quick start guide: [../docs/QUICKSTART.md](../../docs/QUICKSTART.md)
+- Testing guide: [../docs/TESTING.md](../../docs/TESTING.md)
+- Publishing guide: [../docs/PUBLISHING.md](../../docs/PUBLISHING.md)
