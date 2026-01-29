@@ -9,6 +9,16 @@ A guide for developers using Claude or Cursor to create custom Docker STFs for D
 - What to expect from AI-generated code
 - How to test and deploy your Docker STFs
 
+## 📚 Related Documentation
+
+Documents to read before or alongside this guide:
+
+- **[Quick Start Guide](./QUICKSTART.md)** - Fastest way to get started in 5 minutes
+- **[AI Prompts](./AI-PROMPTS.md)** - Copy-paste ready prompt collection
+- **[Testing Guide](./TESTING.md)** - Detailed testing methods
+- **[Publishing Guide](./PUBLISHING.md)** - How to publish Docker images
+- **[D6E Docker STF Development Skill](./d6e-docker-stf-development.md)** - Complete skill document
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -38,6 +48,7 @@ Simply ask Claude/Cursor in natural language. The AI will read the Agent Skills 
 ### Example 1: Data Validation Docker STF
 
 **Your Request:**
+
 ```
 Using the D6E Docker STF Development skill, create a data validation Docker STF that:
 1. Accepts an array of records
@@ -46,6 +57,7 @@ Using the D6E Docker STF Development skill, create a data validation Docker STF 
 ```
 
 **What You'll Get:**
+
 - Complete Python/Node.js/Go implementation
 - Input validation logic
 - Error handling
@@ -55,6 +67,7 @@ Using the D6E Docker STF Development skill, create a data validation Docker STF 
 - Deployment guide
 
 **Generated Files:**
+
 ```
 data-validator/
 ├── main.py                 # or index.js / main.go
@@ -66,12 +79,14 @@ data-validator/
 ### Example 2: External API Integration
 
 **Your Request:**
+
 ```
-Create a D6E Docker STF that fetches weather data from OpenWeatherMap API 
+Create a D6E Docker STF that fetches weather data from OpenWeatherMap API
 and stores it in the database. Include error handling for API failures.
 ```
 
 **What You'll Get:**
+
 ```python
 # main.py
 import requests
@@ -82,22 +97,22 @@ import logging
 def process(user_input, sources, context):
     api_key = user_input.get("api_key")
     city = user_input.get("city")
-    
+
     # Fetch weather data
     url = f"https://api.openweathermap.org/data/2.5/weather"
     response = requests.get(url, params={"q": city, "appid": api_key}, timeout=10)
     response.raise_for_status()
     weather = response.json()
-    
+
     # Store in database
     sql = f"""
         INSERT INTO weather_data (city, temperature, description, fetched_at)
         VALUES ('{city}', {weather['main']['temp']}, '{weather['weather'][0]['description']}', NOW())
         RETURNING *
     """
-    result = execute_sql(context["api_url"], context["api_token"], 
+    result = execute_sql(context["api_url"], context["api_token"],
                         context["workspace_id"], context["stf_id"], sql)
-    
+
     return {
         "status": "success",
         "city": city,
@@ -109,6 +124,7 @@ def process(user_input, sources, context):
 ### Example 3: Data Transformation Pipeline
 
 **Your Request:**
+
 ```
 Build a D6E Docker STF that:
 1. Reads data from a source table
@@ -120,6 +136,7 @@ Use the sources parameter to get table names from previous steps.
 
 **What You'll Get:**
 Complete implementation with:
+
 - Reading from sources
 - Data transformation logic
 - Filtering
@@ -135,6 +152,7 @@ Create a D6E Docker STF that [does something simple]
 ```
 
 Example:
+
 ```
 Create a D6E Docker STF that converts timestamps to different timezones
 ```
@@ -146,8 +164,9 @@ Create a D6E Docker STF that [reads/writes data] with [specific conditions]
 ```
 
 Example:
+
 ```
-Create a D6E Docker STF that archives old records by moving them from 
+Create a D6E Docker STF that archives old records by moving them from
 the main table to an archive table if they're older than 90 days
 ```
 
@@ -158,6 +177,7 @@ Create a D6E Docker STF that integrates with [external service] to [do something
 ```
 
 Example:
+
 ```
 Create a D6E Docker STF that integrates with SendGrid to send email
 notifications when certain conditions are met in the database
@@ -174,6 +194,7 @@ Include [specific requirements]
 ```
 
 Example:
+
 ```
 Create a D6E Docker STF that:
 1. Fetches user activity from the events table
@@ -190,6 +211,7 @@ After Claude/Cursor generates your Docker STF:
 ### 1. Input/Output Format
 
 Verify the JSON structure matches your needs:
+
 ```python
 # Input
 {
@@ -208,6 +230,7 @@ Verify the JSON structure matches your needs:
 ### 2. SQL Queries
 
 Check for:
+
 - Proper escaping of user input
 - No DDL statements (CREATE/DROP/ALTER)
 - Correct table names
@@ -215,6 +238,7 @@ Check for:
 ### 3. Error Handling
 
 Ensure errors are caught and reported:
+
 ```python
 try:
     result = execute_sql(...)
@@ -226,6 +250,7 @@ except Exception as e:
 ### 4. Logging
 
 Verify logs go to stderr:
+
 ```python
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 ```
@@ -246,16 +271,17 @@ docker run --rm -i my-skill:test
 ### Integration Test with D6E
 
 1. **Publish to registry:**
+
 ```bash
 docker tag my-skill:test ghcr.io/username/my-skill:latest
 docker push ghcr.io/username/my-skill:latest
 ```
 
 2. **Register in D6E:**
-Use D6E's MCP tools or API to create STF and workflow
+   Use D6E's MCP tools or API to create STF and workflow
 
 3. **Execute:**
-Run the workflow and verify results
+   Run the workflow and verify results
 
 ## 🚀 Deployment
 
@@ -299,12 +325,15 @@ docker push registry.example.com/my-skill:latest
 ### Tip 1: Iterative Development
 
 Ask Claude/Cursor to refine the Docker STF:
+
 ```
 Add retry logic with exponential backoff to the API calls
 ```
+
 ```
 Optimize the SQL queries for better performance
 ```
+
 ```
 Add input validation for email addresses
 ```
@@ -312,9 +341,11 @@ Add input validation for email addresses
 ### Tip 2: Language Selection
 
 Specify your preferred language:
+
 ```
 Create a D6E Docker STF in Go that...
 ```
+
 ```
 Create a D6E Docker STF using Node.js with TypeScript that...
 ```
@@ -322,8 +353,9 @@ Create a D6E Docker STF using Node.js with TypeScript that...
 ### Tip 3: Include Context
 
 Provide context for better results:
+
 ```
-Create a D6E Docker STF for an e-commerce platform that 
+Create a D6E Docker STF for an e-commerce platform that
 calculates shipping costs based on weight, destination,
 and carrier. We use USPS, FedEx, and UPS.
 ```
@@ -331,6 +363,7 @@ and carrier. We use USPS, FedEx, and UPS.
 ### Tip 4: Request Examples
 
 Ask for usage examples:
+
 ```
 Also provide example input JSON for testing
 ```
@@ -338,10 +371,11 @@ Also provide example input JSON for testing
 ### Tip 5: Multi-Operation Docker STFs
 
 Create Docker STFs with multiple operations:
+
 ```
 Create a D6E Docker STF with three operations:
 1. 'validate' - validates data format
-2. 'transform' - transforms data structure  
+2. 'transform' - transforms data structure
 3. 'enrich' - adds external data
 ```
 
@@ -350,6 +384,7 @@ Create a D6E Docker STF with three operations:
 ### Issue: Generated code doesn't match my needs
 
 **Solution:** Be more specific in your request
+
 ```
 ❌ Create a data processing Docker STF
 ✅ Create a Docker STF that validates email addresses using regex,
@@ -359,6 +394,7 @@ Create a D6E Docker STF with three operations:
 ### Issue: SQL queries look unsafe
 
 **Solution:** Ask for improvements
+
 ```
 Review the SQL queries for injection vulnerabilities and add
 proper escaping
@@ -367,6 +403,7 @@ proper escaping
 ### Issue: Missing error handling
 
 **Solution:** Request explicitly
+
 ```
 Add comprehensive error handling with specific error messages
 for different failure scenarios
@@ -375,6 +412,7 @@ for different failure scenarios
 ### Issue: No logging
 
 **Solution:** Ask for it
+
 ```
 Add detailed logging to stderr for debugging
 ```
@@ -384,14 +422,14 @@ Add detailed logging to stderr for debugging
 ### Custom Base Images
 
 ```
-Create a D6E Docker STF using a custom base image with 
+Create a D6E Docker STF using a custom base image with
 TensorFlow for ML inference
 ```
 
 ### Multi-Stage Builds
 
 ```
-Create a D6E Docker STF with a multi-stage Dockerfile to 
+Create a D6E Docker STF with a multi-stage Dockerfile to
 minimize image size
 ```
 
@@ -405,7 +443,7 @@ configuration (API keys, endpoints, etc.)
 ### Batch Processing
 
 ```
-Create a D6E Docker STF that processes data in batches of 
+Create a D6E Docker STF that processes data in batches of
 100 records to handle large datasets efficiently
 ```
 
@@ -419,10 +457,31 @@ Create a D6E Docker STF that processes data in batches of
 
 ## 📖 Additional Resources
 
-- [D6E Agent Skills Repository](https://github.com/d6e-ai/agent-skills)
-- [D6E Documentation](https://github.com/d6e-ai/d6e)
-- [Claude Agent Skills Guide](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
-- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)
+### Documentation in This Repository
+
+- **[Quick Start Guide](./QUICKSTART.md)** - Fastest way to get started in 5 minutes
+- **[AI Prompts Collection](./AI-PROMPTS.md)** - Ready-to-use prompt collection (copy-paste OK)
+- **[Testing Guide](./TESTING.md)** - From local tests to integration tests and E2E tests
+- **[Publishing Guide](./PUBLISHING.md)** - How to publish to GitHub Container Registry and Docker Hub
+- **[D6E Docker STF Development Skill](./d6e-docker-stf-development.md)** - Complete skill document (referenced by AI)
+
+### External Resources
+
+- [D6E Agent Skills Repository](https://github.com/d6e-ai/agent-skills) - This repository
+- [D6E Documentation](https://github.com/d6e-ai/d6e) - D6E platform documentation
+- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Real Docker STF sample
+- [Claude Agent Skills Guide](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Official Agent Skills guide
+- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/) - Docker best practices
+
+---
+
+## 🎓 Next Steps
+
+1. Try **[Quick Start](./QUICKSTART.md)** to create a Docker STF hands-on
+2. Try various prompt examples in **[AI Prompts](./AI-PROMPTS.md)**
+3. Learn testing methods in **[Testing Guide](./TESTING.md)**
+4. Publish your image with **[Publishing Guide](./PUBLISHING.md)**
+5. Create your own Docker STF and share with your team!
 
 ---
 

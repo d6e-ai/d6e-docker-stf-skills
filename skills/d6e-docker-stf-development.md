@@ -664,11 +664,49 @@ def process(user_input, sources, context):
 
 ## Related Documentation
 
-- D6E Docker Runtime Guide: `/docs/08-stf-docker-runtime.md`
-- D6E Testing Guide: `/docs/09-testing-docker-runtime.md`
-- D6E Policy System: (see D6E documentation)
-- Model Context Protocol: https://modelcontextprotocol.io
+### Documentation in This Repository
+
+Guides and resources for developers:
+
+- **[Quick Start Guide](./QUICKSTART.md)** - Steps to create your first Docker STF in 5 minutes
+- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed development guide with practical examples
+- **[AI Prompts Collection](./AI-PROMPTS.md)** - Copy-paste ready prompt collection
+- **[Testing Guide](./TESTING.md)** - Local tests, integration tests, and E2E tests
+- **[Publishing Guide](./PUBLISHING.md)** - Publishing steps to GitHub Container Registry and Docker Hub
+
+### D6E Official Documentation
+
+- [D6E Docker Runtime Guide](https://github.com/d6e-ai/d6e/blob/main/docs/08-stf-docker-runtime.md) - Docker Runtime details
+- [D6E Testing Guide](https://github.com/d6e-ai/d6e/blob/main/docs/09-testing-docker-runtime.md) - Testing methods
+- D6E Policy System - Policy-based access control
+
+### Sample Projects
+
+Working Docker STF examples:
+
+- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Test Docker STF (includes SQL operations)
+
+### Other Resources
+
+- [Model Context Protocol](https://modelcontextprotocol.io) - MCP specification
+- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/) - Docker best practices
+- [Claude Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Agent Skills overview
 
 ---
 
-**Note:** This skill is designed for Claude/Cursor AI assistants to help developers create D6E Docker STFs. When a user requests a custom D6E Docker STF, use the patterns and examples in this document to generate appropriate code.
+## Usage Notes for AI Assistants
+
+**Note:** This skill is designed for Claude/Cursor AI assistants to help developers create D6E Docker STFs.
+
+**When a user requests a custom D6E Docker STF:**
+
+1. Read and understand this skill document
+2. Use the patterns and examples provided
+3. Generate appropriate code following D6E conventions
+4. Include all necessary files (Dockerfile, dependencies, README)
+5. Provide clear testing instructions
+6. Reference the appropriate documentation for more details:
+   - For quick examples: [Quick Start Guide](./QUICKSTART.md)
+   - For detailed guidance: [Developer Guide](./DEVELOPER_GUIDE.md)
+   - For testing: [Testing Guide](./TESTING.md)
+   - For publishing: [Publishing Guide](./PUBLISHING.md)

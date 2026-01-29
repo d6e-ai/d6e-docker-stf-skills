@@ -30,27 +30,76 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 ## 🚀 How to Use
 
+### Quick Start (5 minutes)
+
+**New to D6E Docker STFs?** Start with the **[Quick Start Guide](./QUICKSTART.md)** to create your first Docker STF in 5 minutes!
+
+### For Cursor Users
+
+1. **Open this repository in Cursor**
+
+   ```bash
+   git clone https://github.com/d6e-ai/agent-skills.git
+   cd agent-skills
+   cursor .
+   ```
+
+2. **Open Composer (Cmd/Ctrl + I)**
+
+3. **Paste a prompt** (choose from [AI Prompts](./AI-PROMPTS.md))
+
+   ```
+   Using the D6E Docker STF Development skill, create a Docker STF for data validation.
+
+   Requirements:
+   - Python implementation
+   - Fetch data from database
+   - Apply validation rules
+   - Return results
+   ```
+
+4. **Review and test the generated code**
+
+### For Claude Code Users
+
+1. **Open the project**
+
+2. **Reference the skill document**
+
+   ```
+   Using @d6e-docker-stf-development.md, create a simple Echo Docker STF.
+   ```
+
+3. **Review and test the generated code**
+
 ### For Developers
 
-**New to D6E Docker STFs?** Start with the **[Developer Guide](./DEVELOPER_GUIDE.md)** for step-by-step examples!
+#### 📖 Documentation
 
-1. **Open this repository in Claude/Cursor**
-2. **Reference the skill** when asking for help:
-   ```
-   Using the D6E Docker STF Development skill,
-   create a data validation Docker STF that checks...
-   ```
-3. **Claude/Cursor will generate** appropriate code following D6E patterns
+- **[Quick Start](./QUICKSTART.md)** - Create a Docker STF in 5 minutes
+- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed development guide
+- **[AI Prompts](./AI-PROMPTS.md)** - Copy-paste prompt collection
+- **[Testing Guide](./TESTING.md)** - Testing methods
+- **[Publishing Guide](./PUBLISHING.md)** - How to publish Docker images
+- **[D6E Docker STF Development Skill](./d6e-docker-stf-development.md)** - Complete skill document
 
-### For Claude/Cursor
+#### 🔄 Workflow
+
+1. **Develop**: Generate code with Cursor/Claude Code
+2. **Test**: Test locally with Docker
+3. **Publish**: Publish to Container Registry
+4. **Deploy**: Use in D6E
+
+### For AI Assistants (Claude/Cursor)
 
 When a user requests help with D6E Docker STFs:
 
-1. Read the relevant skill document
+1. Read the relevant skill document (`d6e-docker-stf-development.md`)
 2. Apply the patterns and guidelines
 3. Generate code that follows D6E conventions
 4. Include necessary files (Dockerfile, requirements.txt, etc.)
 5. Provide testing and deployment instructions
+6. Reference the appropriate documentation for more details
 
 ## 📖 What You'll Learn
 
@@ -64,49 +113,117 @@ When a user requests help with D6E Docker STFs:
 
 ## 🛠️ Quick Example
 
-With this Agent Skill loaded, you can ask Claude/Cursor:
+### Example 1: Simple Echo STF
+
+**Prompt:**
 
 ```
-Create a D6E Docker STF that:
-1. Fetches data from an external API
-2. Validates the data
-3. Stores it in a D6E database table
+Using the D6E Docker STF Development skill, create a simple Echo Docker STF.
+
+Requirements:
+- Python implementation
+- operation: "echo"
+- Error handling
+- Include Dockerfile, requirements.txt, and README.md
 ```
 
-And you'll get a complete implementation including:
+**Generated files:**
 
-- Python/Node.js/Go source code
-- Dockerfile
-- Dependencies file
-- Testing instructions
-- Deployment guide
+- `main.py` - Main logic
+- `Dockerfile` - Container definition
+- `requirements.txt` - Dependencies
+- `README.md` - Usage instructions
+
+### Example 2: Database Query STF
+
+**Prompt:**
+
+```
+Using the D6E Docker STF Development skill, create a Docker STF that fetches data from the database.
+
+Requirements:
+- Node.js (TypeScript) implementation
+- operation: "query_data"
+- Use SQL API to fetch data
+- Include policy configuration instructions
+```
+
+### Example 3: External API Integration
+
+**Prompt:**
+
+```
+Using the D6E Docker STF Development skill, create a Docker STF that integrates with an external API.
+
+Requirements:
+- Python implementation
+- Fetch data from external API
+- Store in D6E database
+- Error handling and retry logic
+```
+
+For more prompt examples, see **[AI Prompts](./AI-PROMPTS.md)**.
+
+### Real Sample Code
+
+**[examples/echo-stf](./examples/echo-stf/)** contains a working simple Docker STF example.
+
+```bash
+cd examples/echo-stf
+./test-local.sh  # Build & test
+```
 
 ## 🔗 Related Resources
 
-- [D6E Platform](https://github.com/d6e-ai/d6e)
-- [D6E Docker Runtime Guide](https://github.com/d6e-ai/d6e/blob/main/docs/08-stf-docker-runtime.md)
-- [Claude Agent Skills Documentation](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
-- [Model Context Protocol](https://modelcontextprotocol.io)
+### Documentation
+
+- **[Quick Start Guide](./QUICKSTART.md)** - 5-minute quick start
+- **[AI Prompts Collection](./AI-PROMPTS.md)** - Ready-to-use prompts
+- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed development guide
+- **[Testing Guide](./TESTING.md)** - Comprehensive testing methods
+- **[Publishing Guide](./PUBLISHING.md)** - How to publish images
+
+### External Resources
+
+- [D6E Platform](https://github.com/d6e-ai/d6e) - D6E main repository
+- [D6E Docker Runtime Guide](https://github.com/d6e-ai/d6e/blob/main/docs/08-stf-docker-runtime.md) - Docker Runtime details
+- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Sample Docker STF
+- [Claude Agent Skills Documentation](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Agent Skills overview
+- [Model Context Protocol](https://modelcontextprotocol.io) - MCP specification
 
 ## 🤝 Contributing
 
-Contributions are welcome! To add new skills or improve existing ones:
+Contributions are welcome! Help us add new skills or improve existing ones.
 
-1. Fork this repository
-2. Create a new skill document following the format
-3. Submit a pull request
+For detailed guidelines, see **[CONTRIBUTING.md](./CONTRIBUTING.md)**.
+
+### Simple Contribution Steps
+
+1. **Fork the repository**
+2. **Make changes** (documentation improvements, samples, bug fixes, etc.)
+3. **Create a Pull Request**
+
+### What You Can Contribute
+
+- 📝 Documentation improvements (typo fixes, clarifications)
+- 💡 New prompt examples
+- 🐛 Bug reports and fixes
+- 🎯 New Agent Skills
+- 📚 Sample code
 
 ### Skill Document Format
 
-Each skill should include:
+New skills should include:
 
-- **Overview**: What the skill teaches
-- **When to Use**: Scenarios where the skill applies
+- **Overview**: Skill overview
+- **When to Use**: When to use it
 - **How to**: Step-by-step instructions
-- **Best Practices**: Guidelines and recommendations
-- **Examples**: Concrete code samples
-- **Troubleshooting**: Common issues and solutions
+- **Best Practices**: Best practices
+- **Examples**: Concrete code examples
+- **Troubleshooting**: Troubleshooting
 - **Reference**: Technical specifications
+
+For details, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## 📝 License
 
@@ -122,8 +239,90 @@ Traditional documentation tells developers **what** to do. Agent Skills teach AI
 - ✅ **Up-to-date**: Easy to update as D6E evolves
 - ✅ **Accessible**: Developers don't need to memorize APIs
 
+## 💻 Using with Cursor and Claude Code
+
+### Using with Cursor
+
+Cursor automatically recognizes `.md` files as Agent Skills.
+
+1. **Open repository**
+
+   ```bash
+   cursor /path/to/agent-skills
+   ```
+
+2. **Use Composer (Cmd/Ctrl + I)**
+
+   - Composer automatically loads skill documents
+   - Paste prompts and get appropriate code generated
+
+3. **Use @mention feature (optional)**
+
+   ```
+   Using @d6e-docker-stf-development.md, create an Echo Docker STF.
+   ```
+
+4. **Also available in Chat**
+   - Regular chat can also reference skill documents
+
+### Using with Claude Code
+
+In Claude Code, you must explicitly reference skill documents.
+
+1. **Open project**
+
+2. **Reference skill document**
+
+   ```
+   Using @d6e-docker-stf-development.md, implement [your requirements].
+   ```
+
+3. **Or add skill document to context**
+   - Open file to review content
+   - Add to context
+
+### Prompt Best Practices
+
+#### ✅ Good Prompt
+
+```
+Using the D6E Docker STF Development skill, create a Docker STF with the following requirements:
+
+Language: Python 3.11
+Operation: "process_data"
+Input format: { "data": [...], "operation_type": "validate" }
+Output format: { "status": "success", "results": [...] }
+
+Required files:
+- main.py
+- Dockerfile (use python:3.11-slim)
+- requirements.txt
+- README.md
+
+Include error handling and logging.
+```
+
+#### ❌ Bad Prompt
+
+```
+Create a Docker STF
+```
+
+Reason: Lacks specificity and expected results are unclear
+
 ## 🎓 Learn More
 
-- [Agent Skills Overview](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
-- [Creating Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/creating)
-- [D6E Documentation](https://github.com/d6e-ai/d6e)
+### This Repository
+
+- **[Quick Start](./QUICKSTART.md)** - Get started in 5 minutes
+- **[AI Prompts](./AI-PROMPTS.md)** - Prompt examples
+- **[Developer Guide](./DEVELOPER_GUIDE.md)** - Detailed guide
+- **[Testing Guide](./TESTING.md)** - Testing methods
+- **[Publishing Guide](./PUBLISHING.md)** - Publishing methods
+
+### External Resources
+
+- [Agent Skills Overview](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Agent Skills overview
+- [Creating Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/creating) - How to create Agent Skills
+- [D6E Documentation](https://github.com/d6e-ai/d6e) - D6E platform
+- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Sample project
