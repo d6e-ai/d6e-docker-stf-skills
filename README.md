@@ -9,6 +9,7 @@ This repository contains **Agent Skills** that teach Claude and Cursor how to he
 ### What are Agent Skills?
 
 Agent Skills are Markdown documents that provide AI assistants with domain-specific knowledge and workflows. They enable Claude/Cursor to:
+
 - Understand D6E's Docker STF architecture
 - Generate correct implementation patterns
 - Guide developers through the creation process
@@ -19,6 +20,7 @@ Agent Skills are Markdown documents that provide AI assistants with domain-speci
 ### [D6E Docker STF Development](./d6e-docker-stf-development.md)
 
 Teaches Claude/Cursor how to help developers create custom Docker-based STFs for D6E, including:
+
 - Input/output JSON formats
 - SQL API integration
 - Multi-language implementations (Python, Node.js, Go)
@@ -43,6 +45,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 ### For Claude/Cursor
 
 When a user requests help with D6E Docker STFs:
+
 1. Read the relevant skill document
 2. Apply the patterns and guidelines
 3. Generate code that follows D6E conventions
@@ -71,6 +74,7 @@ Create a D6E Docker STF that:
 ```
 
 And you'll get a complete implementation including:
+
 - Python/Node.js/Go source code
 - Dockerfile
 - Dependencies file
@@ -95,6 +99,7 @@ Contributions are welcome! To add new skills or improve existing ones:
 ### Skill Document Format
 
 Each skill should include:
+
 - **Overview**: What the skill teaches
 - **When to Use**: Scenarios where the skill applies
 - **How to**: Step-by-step instructions

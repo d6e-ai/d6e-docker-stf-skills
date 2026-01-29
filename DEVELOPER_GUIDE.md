@@ -298,7 +298,7 @@ docker push registry.example.com/my-skill:latest
 
 ### Tip 1: Iterative Development
 
-Ask Claude/Cursor to refine the skill:
+Ask Claude/Cursor to refine the Docker STF:
 ```
 Add retry logic with exponential backoff to the API calls
 ```
