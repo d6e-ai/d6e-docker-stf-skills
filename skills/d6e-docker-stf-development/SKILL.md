@@ -504,6 +504,253 @@ node_modules/
 .env
 ```
 
+## README Template for D6E AI Agent Users
+
+When publishing a Docker STF, include a comprehensive README that enables D6E AI agents to automatically create and execute workflows. The README should follow this structure:
+
+### Required README Sections
+
+1. **Title and Description** - Clear name and purpose of the STF
+2. **Docker Image URL** - Full path (e.g., `ghcr.io/d6e-ai/stf-xxx:latest`)
+3. **LLM/AI Agent Usage Instructions** - Step-by-step STF creation guide
+4. **Supported Operations** - Table of available operations with parameters
+5. **Input/Output Examples** - Concrete JSON examples for each operation
+6. **AI Agent Prompts** - Ready-to-use prompts for common tasks
+7. **Troubleshooting** - Common issues and solutions
+8. **Local Build and Test** - Commands for local development
+
+### README Template
+
+Use the following template for your Docker STF README:
+
+````markdown
+# {STF Name}
+
+{Brief description of what this STF does}
+
+**Docker Image**: `ghcr.io/{org}/{stf-name}:latest`
+
+## Usage for LLM/AI Agents
+
+To use this Docker image from a D6E AI agent, follow these steps to create and execute the STF.
+
+### Step 1: Create the STF
+
+```javascript
+d6e_create_stf({
+  name: "{stf-name}",
+  description: "{Description of the STF functionality}",
+});
+```
+
+### Step 2: Create the STF Version
+
+```javascript
+d6e_create_stf_version({
+  stf_id: "{stf_id from Step 1}",
+  version: "1.0.0",
+  runtime: "docker",
+  code: '{"image":"ghcr.io/{org}/{stf-name}:latest"}',
+});
+```
+
+**Important**: Always set `runtime` to `"docker"` and format the `code` field as a JSON string: `{"image":"ghcr.io/{org}/{stf-name}:latest"}`.
+
+### Step 3: Create the Workflow
+
+```javascript
+d6e_create_workflow({
+  name: "{stf-name}-workflow",
+  input_steps: [],
+  stf_steps: [
+    {
+      stf_id: "{stf_id}",
+      version: "1.0.0",
+    },
+  ],
+  effect_steps: [],
+});
+```
+
+### Step 4: Execute the Workflow
+
+```javascript
+d6e_execute_workflow({
+  workflow_id: "{workflow_id}",
+  input: {
+    operation: "{operation_name}",
+    // ...operation-specific parameters
+  },
+});
+```
+
+## Supported Operations
+
+| Operation | Required Parameters | Optional | DB Required | Description |
+|-----------|---------------------|----------|-------------|-------------|
+| `{operation_1}` | `param1`, `param2` | `optional1` | ❌/✅ | {Description} |
+| `{operation_2}` | `param1` | - | ❌/✅ | {Description} |
+
+## Input/Output Examples
+
+### {Operation Name}
+
+**Input**:
+
+```json
+{
+  "operation": "{operation_name}",
+  "param1": "value1",
+  "param2": "value2"
+}
+```
+
+**Output**:
+
+```json
+{
+  "output": {
+    "status": "success",
+    "operation": "{operation_name}",
+    "data": {
+      // ... result data
+    }
+  }
+}
+```
+
+## 🤖 Prompts for AI Agents
+
+### Basic Prompt
+
+```
+Use the Docker skill for {task description} in D6E.
+
+Docker Image: ghcr.io/{org}/{stf-name}:latest
+
+Steps:
+1. Create STF with d6e_create_stf (name: "{stf-name}")
+2. Create STF version with d6e_create_stf_version:
+   - runtime: "docker"
+   - code: "{\"image\":\"ghcr.io/{org}/{stf-name}:latest\"}"
+3. Create workflow with d6e_create_workflow
+4. Execute with d6e_execute_workflow
+
+Supported operations:
+- "{operation_1}": {description} (required: {required_params})
+- "{operation_2}": {description} (required: {required_params})
+
+Start with {recommended_first_operation} to verify the setup.
+```
+
+### Task-Specific Prompt
+
+```
+{Specific task description}
+
+Skill to use:
+- Docker Image: ghcr.io/{org}/{stf-name}:latest
+- Operation: {operation_name}
+
+Parameters:
+- param1: "value1"
+- param2: "value2"
+
+Include the following in the results:
+- {Expected output item 1}
+- {Expected output item 2}
+```
+
+### Complete Execution Prompt
+
+```
+{Complete workflow description}
+
+Docker Image: ghcr.io/{org}/{stf-name}:latest
+
+Execution steps:
+1. Create STF (name: "{stf-name}", runtime: "docker")
+
+2. {First operation description}:
+   - operation: "{operation_1}"
+   - param1: value1
+   - param2: value2
+
+3. {Second operation description}:
+   - operation: "{operation_2}"
+   - param1: value1
+
+4. Display results:
+   - {Output item 1}
+   - {Output item 2}
+
+{Additional instructions or requests}
+```
+
+## Troubleshooting
+
+### {Common Issue 1}
+
+{Description and solution}
+
+### {Common Issue 2}
+
+{Description and solution}
+
+## Local Build and Test
+
+```bash
+# Build
+docker build -t {stf-name}:latest .
+
+# Test
+echo '{
+  "workspace_id": "test-ws",
+  "stf_id": "test-stf",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "{operation_name}",
+    "param1": "value1"
+  },
+  "sources": {}
+}' | docker run --rm -i {stf-name}:latest
+```
+
+## Related Documentation
+
+- [Project README](../README.md)
+- {Additional documentation links}
+````
+
+### Key Points for README Creation
+
+1. **Explicit Docker Registration Instructions**
+   - Always specify `runtime: "docker"`
+   - Format `code` as JSON string: `'{"image":"..."}'`
+   - Include the full image path with tag
+
+2. **AI-Friendly Operation Tables**
+   - Use consistent table format
+   - Clearly mark database requirements (❌/✅)
+   - List all required and optional parameters
+
+3. **Ready-to-Use Prompts**
+   - Provide multiple prompt examples (basic, specific, complete)
+   - Include all necessary parameters in prompts
+   - Suggest a recommended first operation for testing
+
+4. **Clear Input/Output Examples**
+   - Show complete JSON structures
+   - Include both success and error response examples
+   - Document all possible output fields
+
+5. **Self-Contained Instructions**
+   - Users should be able to copy the README and prompt to an AI agent
+   - The AI agent should be able to execute without additional context
+   - All steps should be clearly numbered and ordered
+
 ## Additional Resources
 
 For detailed information:
