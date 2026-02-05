@@ -530,11 +530,11 @@ Use the following template for your Docker STF README:
 
 **Docker Image**: `ghcr.io/{org}/{stf-name}:latest`
 
-## LLM/AI エージェント向け使用方法
+## Usage for LLM/AI Agents
 
-この Docker イメージを D6E AI エージェントから使用する場合、以下の手順で STF を作成してください。
+To use this Docker image from a D6E AI agent, follow these steps to create and execute the STF.
 
-### ステップ 1: STF の作成
+### Step 1: Create the STF
 
 ```javascript
 d6e_create_stf({
@@ -543,20 +543,20 @@ d6e_create_stf({
 });
 ```
 
-### ステップ 2: STF バージョンの作成
+### Step 2: Create the STF Version
 
 ```javascript
 d6e_create_stf_version({
-  stf_id: "{ステップ1で取得したstf_id}",
+  stf_id: "{stf_id from Step 1}",
   version: "1.0.0",
   runtime: "docker",
   code: '{"image":"ghcr.io/{org}/{stf-name}:latest"}',
 });
 ```
 
-**重要**: `runtime`は必ず`"docker"`を指定し、`code`フィールドには JSON 文字列として`{"image":"ghcr.io/{org}/{stf-name}:latest"}`を設定してください。
+**Important**: Always set `runtime` to `"docker"` and format the `code` field as a JSON string: `{"image":"ghcr.io/{org}/{stf-name}:latest"}`.
 
-### ステップ 3: ワークフローの作成
+### Step 3: Create the Workflow
 
 ```javascript
 d6e_create_workflow({
@@ -572,7 +572,7 @@ d6e_create_workflow({
 });
 ```
 
-### ステップ 4: ワークフローの実行
+### Step 4: Execute the Workflow
 
 ```javascript
 d6e_execute_workflow({
@@ -584,18 +584,18 @@ d6e_execute_workflow({
 });
 ```
 
-## サポートされている操作
+## Supported Operations
 
-| Operation | 必須パラメータ | オプション | DB必要 | 説明 |
-|-----------|---------------|-----------|--------|------|
+| Operation | Required Parameters | Optional | DB Required | Description |
+|-----------|---------------------|----------|-------------|-------------|
 | `{operation_1}` | `param1`, `param2` | `optional1` | ❌/✅ | {Description} |
 | `{operation_2}` | `param1` | - | ❌/✅ | {Description} |
 
-## 入出力例
+## Input/Output Examples
 
 ### {Operation Name}
 
-**入力**:
+**Input**:
 
 ```json
 {
@@ -605,7 +605,7 @@ d6e_execute_workflow({
 }
 ```
 
-**出力**:
+**Output**:
 
 ```json
 {
@@ -619,57 +619,57 @@ d6e_execute_workflow({
 }
 ```
 
-## 🤖 AI エージェントへのプロンプト
+## 🤖 Prompts for AI Agents
 
-### 基本プロンプト
+### Basic Prompt
 
 ```
-D6Eで{task description}を行うDockerスキルを使用してください。
+Use the Docker skill for {task description} in D6E.
 
 Docker Image: ghcr.io/{org}/{stf-name}:latest
 
-使用手順:
-1. d6e_create_stf でSTFを作成（name: "{stf-name}"）
-2. d6e_create_stf_version で以下を指定:
+Steps:
+1. Create STF with d6e_create_stf (name: "{stf-name}")
+2. Create STF version with d6e_create_stf_version:
    - runtime: "docker"
    - code: "{\"image\":\"ghcr.io/{org}/{stf-name}:latest\"}"
-3. d6e_create_workflow でワークフローを作成
-4. d6e_execute_workflow で実行
+3. Create workflow with d6e_create_workflow
+4. Execute with d6e_execute_workflow
 
-サポートされている操作:
-- "{operation_1}": {description}（{required_params}必須）
-- "{operation_2}": {description}（{required_params}必須）
+Supported operations:
+- "{operation_1}": {description} (required: {required_params})
+- "{operation_2}": {description} (required: {required_params})
 
-まずは{recommended_first_operation}で動作確認してください。
+Start with {recommended_first_operation} to verify the setup.
 ```
 
-### 特定タスク向けプロンプト
+### Task-Specific Prompt
 
 ```
 {Specific task description}
 
-使用スキル:
+Skill to use:
 - Docker Image: ghcr.io/{org}/{stf-name}:latest
-- 操作: {operation_name}
+- Operation: {operation_name}
 
-パラメータ:
+Parameters:
 - param1: "value1"
 - param2: "value2"
 
-結果には以下を含めてください:
+Include the following in the results:
 - {Expected output item 1}
 - {Expected output item 2}
 ```
 
-### 完全な実行例プロンプト
+### Complete Execution Prompt
 
 ```
 {Complete workflow description}
 
 Docker Image: ghcr.io/{org}/{stf-name}:latest
 
-実行ステップ:
-1. STF作成（name: "{stf-name}", runtime: "docker"）
+Execution steps:
+1. Create STF (name: "{stf-name}", runtime: "docker")
 
 2. {First operation description}:
    - operation: "{operation_1}"
@@ -680,14 +680,14 @@ Docker Image: ghcr.io/{org}/{stf-name}:latest
    - operation: "{operation_2}"
    - param1: value1
 
-4. 結果の表示:
+4. Display results:
    - {Output item 1}
    - {Output item 2}
 
 {Additional instructions or requests}
 ```
 
-## トラブルシューティング
+## Troubleshooting
 
 ### {Common Issue 1}
 
@@ -697,13 +697,13 @@ Docker Image: ghcr.io/{org}/{stf-name}:latest
 
 {Description and solution}
 
-## ローカルでのビルドとテスト
+## Local Build and Test
 
 ```bash
-# ビルド
+# Build
 docker build -t {stf-name}:latest .
 
-# テスト
+# Test
 echo '{
   "workspace_id": "test-ws",
   "stf_id": "test-stf",
@@ -718,9 +718,9 @@ echo '{
 }' | docker run --rm -i {stf-name}:latest
 ```
 
-## 関連ドキュメント
+## Related Documentation
 
-- [プロジェクト README](../README.md)
+- [Project README](../README.md)
 - {Additional documentation links}
 ````
 
