@@ -504,6 +504,253 @@ node_modules/
 .env
 ```
 
+## README Template for D6E AI Agent Users
+
+When publishing a Docker STF, include a comprehensive README that enables D6E AI agents to automatically create and execute workflows. The README should follow this structure:
+
+### Required README Sections
+
+1. **Title and Description** - Clear name and purpose of the STF
+2. **Docker Image URL** - Full path (e.g., `ghcr.io/d6e-ai/stf-xxx:latest`)
+3. **LLM/AI Agent Usage Instructions** - Step-by-step STF creation guide
+4. **Supported Operations** - Table of available operations with parameters
+5. **Input/Output Examples** - Concrete JSON examples for each operation
+6. **AI Agent Prompts** - Ready-to-use prompts for common tasks
+7. **Troubleshooting** - Common issues and solutions
+8. **Local Build and Test** - Commands for local development
+
+### README Template
+
+Use the following template for your Docker STF README:
+
+````markdown
+# {STF Name}
+
+{Brief description of what this STF does}
+
+**Docker Image**: `ghcr.io/{org}/{stf-name}:latest`
+
+## LLM/AI エージェント向け使用方法
+
+この Docker イメージを D6E AI エージェントから使用する場合、以下の手順で STF を作成してください。
+
+### ステップ 1: STF の作成
+
+```javascript
+d6e_create_stf({
+  name: "{stf-name}",
+  description: "{Description of the STF functionality}",
+});
+```
+
+### ステップ 2: STF バージョンの作成
+
+```javascript
+d6e_create_stf_version({
+  stf_id: "{ステップ1で取得したstf_id}",
+  version: "1.0.0",
+  runtime: "docker",
+  code: '{"image":"ghcr.io/{org}/{stf-name}:latest"}',
+});
+```
+
+**重要**: `runtime`は必ず`"docker"`を指定し、`code`フィールドには JSON 文字列として`{"image":"ghcr.io/{org}/{stf-name}:latest"}`を設定してください。
+
+### ステップ 3: ワークフローの作成
+
+```javascript
+d6e_create_workflow({
+  name: "{stf-name}-workflow",
+  input_steps: [],
+  stf_steps: [
+    {
+      stf_id: "{stf_id}",
+      version: "1.0.0",
+    },
+  ],
+  effect_steps: [],
+});
+```
+
+### ステップ 4: ワークフローの実行
+
+```javascript
+d6e_execute_workflow({
+  workflow_id: "{workflow_id}",
+  input: {
+    operation: "{operation_name}",
+    // ...operation-specific parameters
+  },
+});
+```
+
+## サポートされている操作
+
+| Operation | 必須パラメータ | オプション | DB必要 | 説明 |
+|-----------|---------------|-----------|--------|------|
+| `{operation_1}` | `param1`, `param2` | `optional1` | ❌/✅ | {Description} |
+| `{operation_2}` | `param1` | - | ❌/✅ | {Description} |
+
+## 入出力例
+
+### {Operation Name}
+
+**入力**:
+
+```json
+{
+  "operation": "{operation_name}",
+  "param1": "value1",
+  "param2": "value2"
+}
+```
+
+**出力**:
+
+```json
+{
+  "output": {
+    "status": "success",
+    "operation": "{operation_name}",
+    "data": {
+      // ... result data
+    }
+  }
+}
+```
+
+## 🤖 AI エージェントへのプロンプト
+
+### 基本プロンプト
+
+```
+D6Eで{task description}を行うDockerスキルを使用してください。
+
+Docker Image: ghcr.io/{org}/{stf-name}:latest
+
+使用手順:
+1. d6e_create_stf でSTFを作成（name: "{stf-name}"）
+2. d6e_create_stf_version で以下を指定:
+   - runtime: "docker"
+   - code: "{\"image\":\"ghcr.io/{org}/{stf-name}:latest\"}"
+3. d6e_create_workflow でワークフローを作成
+4. d6e_execute_workflow で実行
+
+サポートされている操作:
+- "{operation_1}": {description}（{required_params}必須）
+- "{operation_2}": {description}（{required_params}必須）
+
+まずは{recommended_first_operation}で動作確認してください。
+```
+
+### 特定タスク向けプロンプト
+
+```
+{Specific task description}
+
+使用スキル:
+- Docker Image: ghcr.io/{org}/{stf-name}:latest
+- 操作: {operation_name}
+
+パラメータ:
+- param1: "value1"
+- param2: "value2"
+
+結果には以下を含めてください:
+- {Expected output item 1}
+- {Expected output item 2}
+```
+
+### 完全な実行例プロンプト
+
+```
+{Complete workflow description}
+
+Docker Image: ghcr.io/{org}/{stf-name}:latest
+
+実行ステップ:
+1. STF作成（name: "{stf-name}", runtime: "docker"）
+
+2. {First operation description}:
+   - operation: "{operation_1}"
+   - param1: value1
+   - param2: value2
+
+3. {Second operation description}:
+   - operation: "{operation_2}"
+   - param1: value1
+
+4. 結果の表示:
+   - {Output item 1}
+   - {Output item 2}
+
+{Additional instructions or requests}
+```
+
+## トラブルシューティング
+
+### {Common Issue 1}
+
+{Description and solution}
+
+### {Common Issue 2}
+
+{Description and solution}
+
+## ローカルでのビルドとテスト
+
+```bash
+# ビルド
+docker build -t {stf-name}:latest .
+
+# テスト
+echo '{
+  "workspace_id": "test-ws",
+  "stf_id": "test-stf",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "{operation_name}",
+    "param1": "value1"
+  },
+  "sources": {}
+}' | docker run --rm -i {stf-name}:latest
+```
+
+## 関連ドキュメント
+
+- [プロジェクト README](../README.md)
+- {Additional documentation links}
+````
+
+### Key Points for README Creation
+
+1. **Explicit Docker Registration Instructions**
+   - Always specify `runtime: "docker"`
+   - Format `code` as JSON string: `'{"image":"..."}'`
+   - Include the full image path with tag
+
+2. **AI-Friendly Operation Tables**
+   - Use consistent table format
+   - Clearly mark database requirements (❌/✅)
+   - List all required and optional parameters
+
+3. **Ready-to-Use Prompts**
+   - Provide multiple prompt examples (basic, specific, complete)
+   - Include all necessary parameters in prompts
+   - Suggest a recommended first operation for testing
+
+4. **Clear Input/Output Examples**
+   - Show complete JSON structures
+   - Include both success and error response examples
+   - Document all possible output fields
+
+5. **Self-Contained Instructions**
+   - Users should be able to copy the README and prompt to an AI agent
+   - The AI agent should be able to execute without additional context
+   - All steps should be clearly numbered and ordered
+
 ## Additional Resources
 
 For detailed information:
