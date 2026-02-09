@@ -121,13 +121,50 @@ def execute_sql(api_url, api_token, workspace_id, stf_id, sql):
     response.raise_for_status()
     return response.json()
 
+def process_describe():
+    """Return the input schema and available operations."""
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["your_operation", "describe"],
+                        "description": "The operation to perform"
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "your_operation": {
+                    "description": "Your operation description",
+                    "required": [],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
 def main():
     try:
         input_data = json.load(sys.stdin)
         user_input = input_data["input"]
+        operation = user_input.get("operation")
 
-        # Your business logic here
-        result = {"status": "success", "message": "Processed"}
+        # Handle describe before any other validation
+        if operation == "describe":
+            result = process_describe()
+        else:
+            # Your business logic here
+            result = {"status": "success", "message": "Processed"}
 
         print(json.dumps({"output": result}))
     except Exception as e:
@@ -181,13 +218,52 @@ async function executeSql(apiUrl, apiToken, workspaceId, stfId, sql) {
   return response.data;
 }
 
+function processDescribe() {
+  return {
+    status: "success",
+    operation: "describe",
+    data: {
+      input_schema: {
+        type: "object",
+        properties: {
+          operation: {
+            type: "string",
+            enum: ["your_operation", "describe"],
+            description: "The operation to perform",
+          },
+        },
+        required: ["operation"],
+      },
+      operations: {
+        your_operation: {
+          description: "Your operation description",
+          required: [],
+          optional: [],
+        },
+        describe: {
+          description: "Returns the input schema and available operations",
+          required: [],
+          optional: [],
+        },
+      },
+    },
+  };
+}
+
 async function main() {
   try {
     const input = await readStdin();
     const data = JSON.parse(input);
+    const { operation } = data.input;
 
-    // Your business logic here
-    const result = { status: "success", message: "Processed" };
+    // Handle describe before any other validation
+    let result;
+    if (operation === "describe") {
+      result = processDescribe();
+    } else {
+      // Your business logic here
+      result = { status: "success", message: "Processed" };
+    }
 
     console.log(JSON.stringify({ output: result }));
   } catch (error) {
@@ -236,6 +312,7 @@ When creating a Docker STF, ensure:
 - [ ] Includes error type in error responses
 - [ ] Validates input parameters
 - [ ] Uses environment variables for configuration
+- [ ] Implements the `describe` operation (returns input schema and available operations)
 
 ## Best Practices
 
@@ -288,6 +365,138 @@ logging.info("Processing started")
 logging.debug(f"Input: {input_data}")  # Detailed logs
 logging.warning("Deprecated operation used")
 logging.error("Failed to process", exc_info=True)
+```
+
+## The `describe` Operation
+
+Every Docker STF **must** implement a `describe` operation. This operation returns the input schema and available operations, enabling workflow builders and AI agents to discover what parameters are needed before creating workflows.
+
+### Why `describe` is Required
+
+- **Discoverability**: Workflow builders can query the STF to understand its capabilities without reading source code
+- **Automation**: AI agents can automatically generate correct `input_mappings` for workflows
+- **Validation**: The schema enables pre-execution validation of workflow inputs
+- **Documentation**: Acts as machine-readable, always up-to-date documentation
+
+### `describe` Request
+
+```json
+{
+  "input": {
+    "operation": "describe"
+  }
+}
+```
+
+### `describe` Response Format
+
+```json
+{
+  "output": {
+    "status": "success",
+    "operation": "describe",
+    "data": {
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": ["op1", "op2", "describe"],
+            "description": "The operation to perform"
+          }
+        },
+        "required": ["operation"]
+      },
+      "operations": {
+        "op1": {
+          "description": "Description of operation 1",
+          "required": ["param1", "param2"],
+          "optional": ["param3"]
+        },
+        "op2": {
+          "description": "Description of operation 2",
+          "required": ["param1"],
+          "optional": []
+        },
+        "describe": {
+          "description": "Returns the input schema and available operations",
+          "required": [],
+          "optional": []
+        }
+      }
+    }
+  }
+}
+```
+
+### Implementation Pattern (Python)
+
+```python
+def process_describe():
+    """Return the input schema and available operations."""
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["my_operation", "describe"],
+                        "description": "The operation to perform"
+                    },
+                    "param1": {
+                        "type": "string",
+                        "description": "Description of param1"
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "my_operation": {
+                    "description": "What this operation does",
+                    "required": ["param1"],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
+def main():
+    input_data = json.load(sys.stdin)
+    user_input = input_data["input"]
+    operation = user_input.get("operation")
+
+    # Handle describe before any other validation
+    if operation == "describe":
+        result = process_describe()
+    else:
+        # Validate and process other operations
+        ...
+
+    print(json.dumps({"output": result}))
+```
+
+### Best Practice: Workflow Creation with `describe`
+
+When creating workflows that use Docker STFs, always follow this process:
+
+1. **Run `describe` first** to get the input schema
+2. **Map all required parameters** in `input_mappings` based on the schema
+3. **Include optional parameters** where appropriate
+
+```bash
+# Step 1: Discover the STF's capabilities
+echo '{"workspace_id":"...","stf_id":"...","caller":null,"api_url":"...","api_token":"...","input":{"operation":"describe"},"sources":{}}' \
+  | docker run --rm -i my-stf:latest
+
+# Step 2: Use the returned schema to build the workflow input_mappings
 ```
 
 ## Common Patterns
@@ -379,6 +588,19 @@ def call_external_api(url, params):
 ```bash
 # Build image
 docker build -t my-stf:latest .
+
+# Test describe operation first (always start with describe)
+echo '{
+  "workspace_id": "test-id",
+  "stf_id": "test-stf-id",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i my-stf:latest
 
 # Test with sample input
 echo '{
@@ -572,24 +794,40 @@ d6e_create_workflow({
 });
 ```
 
-### Step 4: Execute the Workflow
+### Step 4: Discover the STF's Capabilities (describe)
+
+Before executing operations, run `describe` to get the full input schema:
+
+```javascript
+d6e_execute_workflow({
+  workflow_id: "{workflow_id}",
+  input: {
+    operation: "describe",
+  },
+});
+```
+
+Use the returned schema to confirm required/optional parameters for each operation.
+
+### Step 5: Execute the Workflow
 
 ```javascript
 d6e_execute_workflow({
   workflow_id: "{workflow_id}",
   input: {
     operation: "{operation_name}",
-    // ...operation-specific parameters
+    // ...operation-specific parameters (based on describe output)
   },
 });
 ```
 
 ## Supported Operations
 
-| Operation | Required Parameters | Optional | DB Required | Description |
-|-----------|---------------------|----------|-------------|-------------|
-| `{operation_1}` | `param1`, `param2` | `optional1` | ❌/✅ | {Description} |
-| `{operation_2}` | `param1` | - | ❌/✅ | {Description} |
+| Operation       | Required Parameters | Optional    | DB Required | Description                                   |
+| --------------- | ------------------- | ----------- | ----------- | --------------------------------------------- |
+| `describe`      | -                   | -           | ❌          | Returns input schema and available operations |
+| `{operation_1}` | `param1`, `param2`  | `optional1` | ❌/✅       | {Description}                                 |
+| `{operation_2}` | `param1`            | -           | ❌/✅       | {Description}                                 |
 
 ## Input/Output Examples
 
@@ -634,13 +872,15 @@ Steps:
    - runtime: "docker"
    - code: "{\"image\":\"ghcr.io/{org}/{stf-name}:latest\"}"
 3. Create workflow with d6e_create_workflow
-4. Execute with d6e_execute_workflow
+4. Run describe operation first to discover input schema
+5. Execute with d6e_execute_workflow
 
 Supported operations:
+- "describe": Returns input schema and available operations (run this first)
 - "{operation_1}": {description} (required: {required_params})
 - "{operation_2}": {description} (required: {required_params})
 
-Start with {recommended_first_operation} to verify the setup.
+Start with describe to verify the setup and discover parameters.
 ```
 
 ### Task-Specific Prompt
@@ -671,16 +911,19 @@ Docker Image: ghcr.io/{org}/{stf-name}:latest
 Execution steps:
 1. Create STF (name: "{stf-name}", runtime: "docker")
 
-2. {First operation description}:
+2. Run describe to discover available operations and parameters:
+   - operation: "describe"
+
+3. {First operation description}:
    - operation: "{operation_1}"
    - param1: value1
    - param2: value2
 
-3. {Second operation description}:
+4. {Second operation description}:
    - operation: "{operation_2}"
    - param1: value1
 
-4. Display results:
+5. Display results:
    - {Output item 1}
    - {Output item 2}
 
@@ -703,7 +946,20 @@ Execution steps:
 # Build
 docker build -t {stf-name}:latest .
 
-# Test
+# Test describe first (verify input schema)
+echo '{
+  "workspace_id": "test-ws",
+  "stf_id": "test-stf",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i {stf-name}:latest
+
+# Test operation
 echo '{
   "workspace_id": "test-ws",
   "stf_id": "test-stf",
@@ -727,26 +983,36 @@ echo '{
 ### Key Points for README Creation
 
 1. **Explicit Docker Registration Instructions**
+
    - Always specify `runtime: "docker"`
    - Format `code` as JSON string: `'{"image":"..."}'`
    - Include the full image path with tag
 
-2. **AI-Friendly Operation Tables**
+2. **Always Include the `describe` Operation**
+
+   - List `describe` as the first operation in the Supported Operations table
+   - Show a describe test in the Local Build and Test section
+   - Recommend running `describe` first in all prompts
+
+3. **AI-Friendly Operation Tables**
+
    - Use consistent table format
    - Clearly mark database requirements (❌/✅)
    - List all required and optional parameters
 
-3. **Ready-to-Use Prompts**
+4. **Ready-to-Use Prompts**
+
    - Provide multiple prompt examples (basic, specific, complete)
    - Include all necessary parameters in prompts
-   - Suggest a recommended first operation for testing
+   - Always suggest `describe` as the first operation to verify setup
 
-4. **Clear Input/Output Examples**
+5. **Clear Input/Output Examples**
+
    - Show complete JSON structures
    - Include both success and error response examples
    - Document all possible output fields
 
-5. **Self-Contained Instructions**
+6. **Self-Contained Instructions**
    - Users should be able to copy the README and prompt to an AI agent
    - The AI agent should be able to execute without additional context
    - All steps should be clearly numbered and ordered

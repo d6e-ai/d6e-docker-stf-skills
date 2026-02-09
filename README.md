@@ -29,6 +29,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 - SQL API integration
 - Multi-language implementations (Python, Node.js, Go)
 - Best practices and security guidelines
+- The `describe` operation for self-documenting STFs
 - Common patterns and examples
 - Troubleshooting guide
 
@@ -143,14 +144,17 @@ When a user requests help with D6E Docker STFs:
 1. Read the relevant skill document (`skills/d6e-docker-stf-development/SKILL.md`)
 2. Apply the patterns and guidelines
 3. Generate code that follows D6E conventions
-4. Include necessary files (Dockerfile, requirements.txt, etc.)
-5. Provide testing and deployment instructions
-6. Reference the appropriate documentation for more details
+4. **Always include the `describe` operation** in every generated STF
+5. Include necessary files (Dockerfile, requirements.txt, etc.)
+6. Provide testing and deployment instructions
+7. When creating workflows, **run `describe` first** to discover input schema
+8. Reference the appropriate documentation for more details
 
 ## 📖 What You'll Learn
 
 - **D6E Architecture**: How Docker STFs fit into D6E workflows
 - **Input/Output Formats**: Standard JSON schemas for communication
+- **The `describe` Operation**: Self-documenting STFs that expose their input schema and available operations
 - **SQL API**: Secure database access from Docker containers
 - **Multi-Language Support**: Python, Node.js, and Go examples
 - **Security**: Policy-based access control and best practices
@@ -210,13 +214,25 @@ Requirements:
 
 For more prompt examples, see **[AI Prompts](./docs/AI-PROMPTS.md)**.
 
+### The `describe` Operation
+
+Every Docker STF implements a `describe` operation that returns its input schema and available operations. This enables workflow builders and AI agents to discover capabilities before creating workflows.
+
+```bash
+# Discover what an STF supports
+echo '{"workspace_id":"test","stf_id":"test","caller":null,"api_url":"http://localhost:8080","api_token":"test","input":{"operation":"describe"},"sources":{}}' \
+  | docker run --rm -i echo-stf:latest
+```
+
+This returns the full input schema, including all operations, required parameters, and optional parameters. See the [skill document](./skills/d6e-docker-stf-development/SKILL.md#the-describe-operation) for details.
+
 ### Real Sample Code
 
-**[examples/echo-stf](./examples/echo-stf/)** contains a working simple Docker STF example.
+**[examples/echo-stf](./examples/echo-stf/)** contains a working simple Docker STF example with the `describe` operation implemented.
 
 ```bash
 cd examples/echo-stf
-./test-local.sh  # Build & test
+./test-local.sh  # Build & test (includes describe test)
 ```
 
 ## 🔗 Related Resources
@@ -282,6 +298,7 @@ Traditional documentation tells developers **what** to do. Agent Skills teach AI
 
 - ✅ **Faster Development**: Claude/Cursor generates correct code instantly
 - ✅ **Fewer Errors**: Follows D6E conventions automatically
+- ✅ **Self-Documenting STFs**: The `describe` operation eliminates guesswork when building workflows
 - ✅ **Best Practices**: Security and performance baked in
 - ✅ **Up-to-date**: Easy to update as D6E evolves
 - ✅ **Accessible**: Developers don't need to memorize APIs

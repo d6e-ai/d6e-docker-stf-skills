@@ -38,6 +38,58 @@ interface ErrorOutput {
 }
 ```
 
+## The `describe` Operation
+
+Every Docker STF must implement a `describe` operation that returns the input schema and available operations. This enables discoverability and automation.
+
+### Describe Request Schema (TypeScript)
+
+```typescript
+interface DescribeRequest {
+  input: {
+    operation: "describe";
+  };
+}
+```
+
+### Describe Response Schema (TypeScript)
+
+```typescript
+interface DescribeResponse {
+  output: {
+    status: "success";
+    operation: "describe";
+    data: {
+      input_schema: {
+        type: "object";
+        properties: Record<string, {
+          type: string;
+          enum?: string[];
+          description?: string;
+          items?: Record<string, any>;
+          properties?: Record<string, any>;
+          required?: string[];
+        }>;
+        required: string[];
+      };
+      operations: Record<string, {
+        description: string;
+        required: string[];
+        optional: string[];
+      }>;
+    };
+  };
+}
+```
+
+### Implementation Guidelines
+
+1. **Handle `describe` before other validations** - The `describe` operation should not require any parameters other than `operation`
+2. **Include all operations in the enum** - The `operation` property's `enum` should list all supported operations including `describe` itself
+3. **Document every parameter** - Include `description` for each property in `input_schema`
+4. **Specify required vs optional** - Each operation must clearly list its required and optional parameters
+5. **Keep schema in sync** - Update the `describe` output whenever you add or modify operations
+
 ## SQL API Reference
 
 ### Endpoint
@@ -205,13 +257,65 @@ class ValidationError(Exception):
     pass
 
 
+def process_describe() -> Dict[str, Any]:
+    """Return the input schema and available operations."""
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["query_data", "insert_data", "process_data", "describe"],
+                        "description": "The operation to perform"
+                    },
+                    "table_name": {
+                        "type": "string",
+                        "description": "Target table name for query or insert operations"
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "description": "Array of data objects to insert"
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "query_data": {
+                    "description": "Query data from a table",
+                    "required": ["table_name"],
+                    "optional": []
+                },
+                "insert_data": {
+                    "description": "Insert data into a table",
+                    "required": ["table_name", "data"],
+                    "optional": []
+                },
+                "process_data": {
+                    "description": "Process data with custom logic",
+                    "required": [],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
+
 def validate_input(user_input: Dict[str, Any]) -> None:
     """Validate user input"""
     if "operation" not in user_input:
         raise ValidationError("Missing required field: operation")
     
     operation = user_input["operation"]
-    if operation not in ["query_data", "insert_data", "process_data"]:
+    if operation not in ["query_data", "insert_data", "process_data", "describe"]:
         raise ValidationError(f"Invalid operation: {operation}")
 
 
@@ -280,6 +384,13 @@ def main():
             api_url=input_data["api_url"],
             api_token=input_data["api_token"]
         )
+        
+        # Handle describe operation before validation
+        if input_data["input"].get("operation") == "describe":
+            result = process_describe()
+            print(json.dumps({"output": result}))
+            logger.info("Describe operation completed")
+            return
         
         # Validate input
         validate_input(input_data["input"])
@@ -421,12 +532,58 @@ class ValidationError extends Error {
   }
 }
 
+function processDescribe(): Record<string, any> {
+  return {
+    status: 'success',
+    operation: 'describe',
+    data: {
+      input_schema: {
+        type: 'object',
+        properties: {
+          operation: {
+            type: 'string',
+            enum: ['query_data', 'insert_data', 'process_data', 'describe'],
+            description: 'The operation to perform',
+          },
+          table_name: {
+            type: 'string',
+            description: 'Target table name for query or insert operations',
+          },
+        },
+        required: ['operation'],
+      },
+      operations: {
+        query_data: {
+          description: 'Query data from a table',
+          required: ['table_name'],
+          optional: [],
+        },
+        insert_data: {
+          description: 'Insert data into a table',
+          required: ['table_name', 'data'],
+          optional: [],
+        },
+        process_data: {
+          description: 'Process data with custom logic',
+          required: [],
+          optional: [],
+        },
+        describe: {
+          description: 'Returns the input schema and available operations',
+          required: [],
+          optional: [],
+        },
+      },
+    },
+  };
+}
+
 function validateInput(userInput: Record<string, any>): void {
   if (!userInput.operation) {
     throw new ValidationError('Missing required field: operation');
   }
 
-  const validOperations = ['query_data', 'insert_data', 'process_data'];
+  const validOperations = ['query_data', 'insert_data', 'process_data', 'describe'];
   if (!validOperations.includes(userInput.operation)) {
     throw new ValidationError(`Invalid operation: ${userInput.operation}`);
   }
@@ -484,6 +641,14 @@ async function main() {
       apiUrl: input.api_url,
       apiToken: input.api_token,
     };
+
+    // Handle describe operation before validation
+    if (input.input.operation === 'describe') {
+      const result = processDescribe();
+      console.log(JSON.stringify({ output: result }));
+      console.error('[INFO] Describe operation completed');
+      return;
+    }
 
     // Validate input
     validateInput(input.input);
@@ -680,6 +845,52 @@ func (c *APIClient) ExecuteSQL(sql string) (*SQLResponse, error) {
 	return &sqlResp, nil
 }
 
+func processDescribe() map[string]interface{} {
+	return map[string]interface{}{
+		"status":    "success",
+		"operation": "describe",
+		"data": map[string]interface{}{
+			"input_schema": map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"operation": map[string]interface{}{
+						"type":        "string",
+						"enum":        []string{"query_data", "insert_data", "process_data", "describe"},
+						"description": "The operation to perform",
+					},
+					"table_name": map[string]interface{}{
+						"type":        "string",
+						"description": "Target table name for query or insert operations",
+					},
+				},
+				"required": []string{"operation"},
+			},
+			"operations": map[string]interface{}{
+				"query_data": map[string]interface{}{
+					"description": "Query data from a table",
+					"required":    []string{"table_name"},
+					"optional":    []string{},
+				},
+				"insert_data": map[string]interface{}{
+					"description": "Insert data into a table",
+					"required":    []string{"table_name", "data"},
+					"optional":    []string{},
+				},
+				"process_data": map[string]interface{}{
+					"description": "Process data with custom logic",
+					"required":    []string{},
+					"optional":    []string{},
+				},
+				"describe": map[string]interface{}{
+					"description": "Returns the input schema and available operations",
+					"required":    []string{},
+					"optional":    []string{},
+				},
+			},
+		},
+	}
+}
+
 func validateInput(userInput map[string]interface{}) error {
 	operation, ok := userInput["operation"].(string)
 	if !ok {
@@ -690,6 +901,7 @@ func validateInput(userInput map[string]interface{}) error {
 		"query_data":   true,
 		"insert_data":  true,
 		"process_data": true,
+		"describe":     true,
 	}
 
 	if !validOps[operation] {
@@ -753,6 +965,15 @@ func main() {
 		StfID:       input.StfID,
 		APIUrl:      input.APIUrl,
 		APIToken:    input.APIToken,
+	}
+
+	// Handle describe operation before validation
+	if operation, ok := input.Input["operation"].(string); ok && operation == "describe" {
+		result := processDescribe()
+		output := map[string]interface{}{"output": result}
+		json.NewEncoder(os.Stdout).Encode(output)
+		log.Println("Describe operation completed")
+		return
 	}
 
 	// Validate input
