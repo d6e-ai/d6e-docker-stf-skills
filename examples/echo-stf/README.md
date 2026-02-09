@@ -9,6 +9,7 @@ This Docker STF supports the following operations:
 - **echo**: Return input message as-is
 - **uppercase**: Convert message to uppercase
 - **lowercase**: Convert message to lowercase
+- **describe**: Return the input schema and available operations (self-describing)
 
 ## File Structure
 
@@ -115,7 +116,75 @@ echo '{
 }
 ```
 
-### 4. Error Handling
+### 4. Describe Operation
+
+```bash
+echo '{
+  "workspace_id": "01234567-89ab-cdef-0123-456789abcdef",
+  "stf_id": "01234567-89ab-cdef-0123-456789abcdef",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i echo-stf:latest
+```
+
+**Expected output:**
+
+```json
+{
+  "output": {
+    "status": "success",
+    "operation": "describe",
+    "data": {
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": ["echo", "uppercase", "lowercase", "describe"],
+            "description": "The operation to perform"
+          },
+          "message": {
+            "type": "string",
+            "description": "The message to process"
+          }
+        },
+        "required": ["operation"]
+      },
+      "operations": {
+        "echo": {
+          "description": "Returns the input message as-is",
+          "required": ["message"],
+          "optional": []
+        },
+        "uppercase": {
+          "description": "Converts message to uppercase",
+          "required": ["message"],
+          "optional": []
+        },
+        "lowercase": {
+          "description": "Converts message to lowercase",
+          "required": ["message"],
+          "optional": []
+        },
+        "describe": {
+          "description": "Returns the input schema and available operations",
+          "required": [],
+          "optional": []
+        }
+      }
+    }
+  }
+}
+```
+
+The `describe` operation requires no additional parameters and returns the full input schema and operation details. This enables workflow builders to discover what parameters are needed before creating workflows.
+
+### 5. Error Handling
 
 ```bash
 echo '{
@@ -233,6 +302,7 @@ def main():
 2. **Output**: Write JSON to stdout (`{"output": {...}}` format)
 3. **Logging**: Log to stderr (stdout is reserved for results)
 4. **Errors**: Catch exceptions appropriately and return JSON errors
+5. **Describe**: Implement the `describe` operation to expose input schema and available operations
 
 ## Customization
 

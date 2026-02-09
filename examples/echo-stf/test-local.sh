@@ -139,5 +139,27 @@ else
   exit 1
 fi
 
+# Test 6: Describe operation
+echo "Test 6: Describe operation"
+OUTPUT=$(echo '{
+  "workspace_id": "test",
+  "stf_id": "test",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i ${IMAGE_NAME})
+
+if echo "$OUTPUT" | jq -e '.output.status == "success" and .output.operation == "describe" and .output.data.input_schema and .output.data.operations' > /dev/null; then
+  log_success "Test 6 passed"
+else
+  log_error "Test 6 failed"
+  echo "Output: $OUTPUT"
+  exit 1
+fi
+
 echo ""
 log_success "All tests passed!"
