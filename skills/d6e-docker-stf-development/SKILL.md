@@ -479,7 +479,7 @@ def main():
     else:
         # Validate and process other operations
         ...
-    
+
     print(json.dumps({"output": result}))
 ```
 
@@ -794,24 +794,40 @@ d6e_create_workflow({
 });
 ```
 
-### Step 4: Execute the Workflow
+### Step 4: Discover the STF's Capabilities (describe)
+
+Before executing operations, run `describe` to get the full input schema:
+
+```javascript
+d6e_execute_workflow({
+  workflow_id: "{workflow_id}",
+  input: {
+    operation: "describe",
+  },
+});
+```
+
+Use the returned schema to confirm required/optional parameters for each operation.
+
+### Step 5: Execute the Workflow
 
 ```javascript
 d6e_execute_workflow({
   workflow_id: "{workflow_id}",
   input: {
     operation: "{operation_name}",
-    // ...operation-specific parameters
+    // ...operation-specific parameters (based on describe output)
   },
 });
 ```
 
 ## Supported Operations
 
-| Operation | Required Parameters | Optional | DB Required | Description |
-|-----------|---------------------|----------|-------------|-------------|
-| `{operation_1}` | `param1`, `param2` | `optional1` | ❌/✅ | {Description} |
-| `{operation_2}` | `param1` | - | ❌/✅ | {Description} |
+| Operation       | Required Parameters | Optional    | DB Required | Description                                   |
+| --------------- | ------------------- | ----------- | ----------- | --------------------------------------------- |
+| `describe`      | -                   | -           | ❌          | Returns input schema and available operations |
+| `{operation_1}` | `param1`, `param2`  | `optional1` | ❌/✅       | {Description}                                 |
+| `{operation_2}` | `param1`            | -           | ❌/✅       | {Description}                                 |
 
 ## Input/Output Examples
 
@@ -856,13 +872,15 @@ Steps:
    - runtime: "docker"
    - code: "{\"image\":\"ghcr.io/{org}/{stf-name}:latest\"}"
 3. Create workflow with d6e_create_workflow
-4. Execute with d6e_execute_workflow
+4. Run describe operation first to discover input schema
+5. Execute with d6e_execute_workflow
 
 Supported operations:
+- "describe": Returns input schema and available operations (run this first)
 - "{operation_1}": {description} (required: {required_params})
 - "{operation_2}": {description} (required: {required_params})
 
-Start with {recommended_first_operation} to verify the setup.
+Start with describe to verify the setup and discover parameters.
 ```
 
 ### Task-Specific Prompt
@@ -893,16 +911,19 @@ Docker Image: ghcr.io/{org}/{stf-name}:latest
 Execution steps:
 1. Create STF (name: "{stf-name}", runtime: "docker")
 
-2. {First operation description}:
+2. Run describe to discover available operations and parameters:
+   - operation: "describe"
+
+3. {First operation description}:
    - operation: "{operation_1}"
    - param1: value1
    - param2: value2
 
-3. {Second operation description}:
+4. {Second operation description}:
    - operation: "{operation_2}"
    - param1: value1
 
-4. Display results:
+5. Display results:
    - {Output item 1}
    - {Output item 2}
 
@@ -925,7 +946,20 @@ Execution steps:
 # Build
 docker build -t {stf-name}:latest .
 
-# Test
+# Test describe first (verify input schema)
+echo '{
+  "workspace_id": "test-ws",
+  "stf_id": "test-stf",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i {stf-name}:latest
+
+# Test operation
 echo '{
   "workspace_id": "test-ws",
   "stf_id": "test-stf",
@@ -949,26 +983,36 @@ echo '{
 ### Key Points for README Creation
 
 1. **Explicit Docker Registration Instructions**
+
    - Always specify `runtime: "docker"`
    - Format `code` as JSON string: `'{"image":"..."}'`
    - Include the full image path with tag
 
-2. **AI-Friendly Operation Tables**
+2. **Always Include the `describe` Operation**
+
+   - List `describe` as the first operation in the Supported Operations table
+   - Show a describe test in the Local Build and Test section
+   - Recommend running `describe` first in all prompts
+
+3. **AI-Friendly Operation Tables**
+
    - Use consistent table format
    - Clearly mark database requirements (❌/✅)
    - List all required and optional parameters
 
-3. **Ready-to-Use Prompts**
+4. **Ready-to-Use Prompts**
+
    - Provide multiple prompt examples (basic, specific, complete)
    - Include all necessary parameters in prompts
-   - Suggest a recommended first operation for testing
+   - Always suggest `describe` as the first operation to verify setup
 
-4. **Clear Input/Output Examples**
+5. **Clear Input/Output Examples**
+
    - Show complete JSON structures
    - Include both success and error response examples
    - Document all possible output fields
 
-5. **Self-Contained Instructions**
+6. **Self-Contained Instructions**
    - Users should be able to copy the README and prompt to an AI agent
    - The AI agent should be able to execute without additional context
    - All steps should be clearly numbered and ordered
