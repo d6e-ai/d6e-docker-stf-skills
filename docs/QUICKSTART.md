@@ -15,7 +15,7 @@ This guide shows you how to create and deploy your first D6E Docker STF **in 5 m
 
 ```bash
 # Clone the repository
-git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
 cd d6e-docker-stf-skills
 
 # Open in Cursor
@@ -385,8 +385,7 @@ Using @skills/d6e-docker-stf-development/SKILL.md, implement [your requirements]
 
 For questions or issues:
 
-- **GitHub Issues**: https://github.com/d6e-ai/d6e-docker-stf-skills/issues
-- **GitHub Discussions**: https://github.com/d6e-ai/d6e-docker-stf-skills/discussions
+- **GitLab Issues**: https://gitlab.com/d6e-ai/d6e-docker-stf-skills/-/issues
 - **D6E Documentation**: https://github.com/d6e-ai/d6e
 
 ---

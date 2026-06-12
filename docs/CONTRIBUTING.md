@@ -66,7 +66,7 @@ We welcome the following types of contributions:
 ### Prerequisites
 
 - Git
-- GitHub account
+- GitLab account
 - Text editor (Cursor, VS Code, etc.)
 - Markdown preview tool (optional)
 
@@ -74,20 +74,20 @@ We welcome the following types of contributions:
 
 1. **Fork the repository**
 
-   - Open [d6e-docker-stf-skills](https://github.com/d6e-ai/d6e-docker-stf-skills) on GitHub
+   - Open [d6e-docker-stf-skills](https://gitlab.com/d6e-ai/d6e-docker-stf-skills) on GitLab
    - Click the "Fork" button in the top right
 
 2. **Clone**
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/agent-skills.git
-   cd agent-skills
+   git clone https://gitlab.com/YOUR_USERNAME/d6e-docker-stf-skills.git
+   cd d6e-docker-stf-skills
    ```
 
 3. **Add upstream**
 
    ```bash
-   git remote add upstream https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   git remote add upstream https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 4. **Fetch latest changes**
@@ -506,4 +506,4 @@ Your contributions help the entire D6E community.
 
 **Happy Contributing! 🎉**
 
-If you have any questions, feel free to create an [Issue](https://github.com/d6e-ai/d6e-docker-stf-skills/issues)!
+If you have any questions, feel free to create an [Issue](https://gitlab.com/d6e-ai/d6e-docker-stf-skills/-/issues)!

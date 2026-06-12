@@ -1,7 +1,7 @@
 # D6E Docker STF Skills
 
 [![Skills](https://img.shields.io/badge/skills.sh-d6e--docker--stf--skills-blue)](https://skills.sh)
-[![GitHub](https://img.shields.io/github/stars/d6e-ai/d6e-docker-stf-skills?style=social)](https://github.com/d6e-ai/d6e-docker-stf-skills)
+[![GitLab](https://img.shields.io/badge/GitLab-d6e--ai%2Fd6e--docker--stf--skills-FC6D26?logo=gitlab)](https://gitlab.com/d6e-ai/d6e-docker-stf-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Claude/Cursor Agent Skills for developing custom D6E Docker STFs.
@@ -36,13 +36,15 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 ### Quick Install (Recommended)
 
-Install this skill using the skills.sh CLI:
+Install this skill using the skills CLI:
 
 ```bash
-npx skills add d6e-ai/d6e-docker-stf-skills
+npx skills add https://gitlab.com/d6e-ai/d6e-docker-stf-skills
 ```
 
 This will automatically set up the skill in your Cursor environment.
+
+> This repository is hosted on GitLab, so the full URL is required — the GitHub-style `owner/repo` shorthand does not work.
 
 ### Manual Installation
 
@@ -50,7 +52,7 @@ This will automatically set up the skill in your Cursor environment.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 2. **Add to Cursor:**
@@ -67,7 +69,7 @@ This will automatically set up the skill in your Cursor environment.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 2. **Reference the skill:**
@@ -85,7 +87,7 @@ This will automatically set up the skill in your Cursor environment.
 1. **Open this repository in Cursor**
 
    ```bash
-   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
    cd d6e-docker-stf-skills
    cursor .
    ```
