@@ -29,23 +29,38 @@ Docker STFs receive this JSON via stdin:
   "workspace_id": "UUID",
   "stf_id": "UUID",
   "caller": "UUID | null",
-  "api_url": "http://api:8080",
-  "api_token": "internal_token",
+  "api_url": "http://host.docker.internal:8080",
+  "api_token": "<signed short-lived token generated per execution>",
   "input": {
     "operation": "...",
     ...user-defined parameters
   },
   "sources": {
-    "step_name": {
-      "output": {...previous step data}
-    }
+    "step_name": <resolved input step value>
   }
 }
 ```
 
+Notes:
+
+- `api_url` points back at the d6e API from inside the container. The
+  default is `http://host.docker.internal:8080` (the d6e operator can
+  override it with the `D6E_API_URL_FOR_DOCKER` env var). Never hardcode
+  it — always read it from stdin.
+- `api_token` is a signed, per-execution token scoped to this
+  workspace + STF. Treat it as a secret; never log it.
+- `sources` maps each workflow **input step name** directly to its
+  resolved value — there is **no** `{"output": ...}` wrapper. The value
+  shape depends on the input source type:
+  - `Library` → `{ "code": "...", "types": "...", "version": "..." }`
+  - `File` (JSON content type) → the parsed JSON value
+  - `File` (text content type) → the file body as a string
+  - `File` (binary) → `{ "filename", "content_type", "size", "data": "<base64>" }`
+  - `Fetch` → the parsed JSON response body
+
 ### Output Format
 
-**Success:**
+**Success:** print exactly one JSON document to stdout and exit 0:
 
 ```json
 {
@@ -56,20 +71,29 @@ Docker STFs receive this JSON via stdin:
 }
 ```
 
-**Error:**
+The engine parses the **entire stdout** as a single JSON document with
+a top-level `output` key. Anything else on stdout (log lines, progress
+messages, a second JSON document) causes an
+`Invalid Docker output format` error. All logging must go to stderr.
 
-```json
-{
-  "error": "Error message",
-  "type": "ErrorType"
-}
+**Error:** write a detailed message to **stderr** and exit non-zero:
+
+```python
+print(f"ValidationError: missing required field 'operation'", file=sys.stderr)
+sys.exit(1)
 ```
+
+On a non-zero exit code, d6e reports the workflow step as failed with
+the container's **stderr** as the error message. A JSON body like
+`{"error": ...}` printed to stdout is NOT parsed — put the
+human-readable failure reason on stderr, because that is what the user
+(and the calling AI agent) will see.
 
 ### SQL API Access
 
 Execute SQL via internal API:
 
-**Endpoint:** `POST /api/v1/workspaces/{workspace_id}/sql`
+**Endpoint:** `POST {api_url}/api/v1/workspaces/{workspace_id}/sql`
 
 **Headers:**
 
@@ -80,17 +104,28 @@ X-Workspace-ID: {workspace_id}
 X-STF-ID: {stf_id}
 ```
 
+`api_url`, `api_token`, `workspace_id`, and `stf_id` all come from the
+stdin input — never hardcode them.
+
 **Request:**
 
 ```json
 { "sql": "SELECT * FROM my_table LIMIT 10" }
 ```
 
+**Response:**
+
+- `SELECT` → `{ "rows": [ {...}, ... ] }`
+- `INSERT` / `UPDATE` / `DELETE` → `{ "affected_rows": <number> }`
+
 **Restrictions:**
 
-- No DDL (CREATE, DROP, ALTER)
-- Policy-controlled access
-- Workspace scope only
+- No DDL (CREATE, DROP, ALTER) — error code `DDL_FORBIDDEN`
+- Policy-controlled access — without an allow policy for the table +
+  operation, the call fails with error code `POLICY_DENIED`
+- Workspace scope only. Use plain table names (`leads`, `messages`);
+  d6e transparently rewrites them to the workspace's private schema.
+  Table names must be **23 characters or less**.
 
 ## Quick Start
 
@@ -121,18 +156,56 @@ def execute_sql(api_url, api_token, workspace_id, stf_id, sql):
     response.raise_for_status()
     return response.json()
 
+def process_describe():
+    """Return the input schema and available operations."""
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["your_operation", "describe"],
+                        "description": "The operation to perform"
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "your_operation": {
+                    "description": "Your operation description",
+                    "required": [],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
 def main():
     try:
         input_data = json.load(sys.stdin)
         user_input = input_data["input"]
+        operation = user_input.get("operation")
 
-        # Your business logic here
-        result = {"status": "success", "message": "Processed"}
+        # Handle describe before any other validation
+        if operation == "describe":
+            result = process_describe()
+        else:
+            # Your business logic here
+            result = {"status": "success", "message": "Processed"}
 
         print(json.dumps({"output": result}))
     except Exception as e:
-        logging.error(f"Error: {str(e)}", exc_info=True)
-        print(json.dumps({"error": str(e), "type": type(e).__name__}))
+        # The error message MUST go to stderr — d6e reports stderr as
+        # the step's failure reason when the exit code is non-zero.
+        logging.error(f"{type(e).__name__}: {str(e)}", exc_info=True)
         sys.exit(1)
 
 if __name__ == "__main__":
@@ -181,23 +254,58 @@ async function executeSql(apiUrl, apiToken, workspaceId, stfId, sql) {
   return response.data;
 }
 
+function processDescribe() {
+  return {
+    status: "success",
+    operation: "describe",
+    data: {
+      input_schema: {
+        type: "object",
+        properties: {
+          operation: {
+            type: "string",
+            enum: ["your_operation", "describe"],
+            description: "The operation to perform",
+          },
+        },
+        required: ["operation"],
+      },
+      operations: {
+        your_operation: {
+          description: "Your operation description",
+          required: [],
+          optional: [],
+        },
+        describe: {
+          description: "Returns the input schema and available operations",
+          required: [],
+          optional: [],
+        },
+      },
+    },
+  };
+}
+
 async function main() {
   try {
     const input = await readStdin();
     const data = JSON.parse(input);
+    const { operation } = data.input;
 
-    // Your business logic here
-    const result = { status: "success", message: "Processed" };
+    // Handle describe before any other validation
+    let result;
+    if (operation === "describe") {
+      result = processDescribe();
+    } else {
+      // Your business logic here
+      result = { status: "success", message: "Processed" };
+    }
 
     console.log(JSON.stringify({ output: result }));
   } catch (error) {
-    console.error("Error:", error.message);
-    console.log(
-      JSON.stringify({
-        error: error.message,
-        type: error.name,
-      })
-    );
+    // The error message MUST go to stderr — d6e reports stderr as
+    // the step's failure reason when the exit code is non-zero.
+    console.error(`${error.name}: ${error.message}`);
     process.exit(1);
   }
 }
@@ -229,13 +337,15 @@ ENTRYPOINT ["node", "index.js"]
 When creating a Docker STF, ensure:
 
 - [ ] Reads JSON from stdin
-- [ ] Outputs JSON to stdout (`{"output": {...}}`)
-- [ ] Logs to stderr (stdout is for results only)
-- [ ] Handles errors gracefully
+- [ ] Outputs exactly ONE JSON document to stdout (`{"output": {...}}`) — nothing else
+- [ ] Logs to stderr (stdout is for the result only)
+- [ ] On failure: writes the reason to stderr and exits non-zero (d6e surfaces stderr as the error)
 - [ ] Uses small base images (e.g., `python:3.11-slim`)
-- [ ] Includes error type in error responses
 - [ ] Validates input parameters
-- [ ] Uses environment variables for configuration
+- [ ] Reads `api_url` / `api_token` / `workspace_id` / `stf_id` from stdin (never hardcoded)
+- [ ] Uses environment variables for configuration; secrets are declared via `secret_keys` (see "Registering the STF in d6e")
+- [ ] Implements the `describe` operation (returns input schema and available operations)
+- [ ] Finishes within the execution timeout (default 5 minutes)
 
 ## Best Practices
 
@@ -255,22 +365,29 @@ When creating a Docker STF, ensure:
 
 ### Error Handling
 
+d6e decides success/failure from the **exit code** and reports the
+container's **stderr** as the failure reason. So: successful runs print
+the `{"output": ...}` JSON to stdout and exit 0; failed runs write a
+descriptive message to stderr and exit non-zero.
+
 ```python
 try:
     # Your logic
     result = process_data(input_data)
     print(json.dumps({"output": result}))
 except ValueError as e:
-    # Validation errors
-    logging.error(f"Validation error: {str(e)}")
-    print(json.dumps({"error": str(e), "type": "ValidationError"}))
+    # Validation errors — the stderr text is what users will see
+    logging.error(f"ValidationError: {str(e)} (input={user_input})")
     sys.exit(1)
 except Exception as e:
     # Unexpected errors
-    logging.error(f"Unexpected error: {str(e)}", exc_info=True)
-    print(json.dumps({"error": str(e), "type": type(e).__name__}))
+    logging.error(f"{type(e).__name__}: {str(e)}", exc_info=True)
     sys.exit(1)
 ```
+
+Recoverable, domain-level "failures" that the workflow should continue
+from (e.g. "no matching rows") are not errors — return them inside
+`output` with a status field and exit 0.
 
 ### Logging
 
@@ -288,6 +405,138 @@ logging.info("Processing started")
 logging.debug(f"Input: {input_data}")  # Detailed logs
 logging.warning("Deprecated operation used")
 logging.error("Failed to process", exc_info=True)
+```
+
+## The `describe` Operation
+
+Every Docker STF **must** implement a `describe` operation. This operation returns the input schema and available operations, enabling workflow builders and AI agents to discover what parameters are needed before creating workflows.
+
+### Why `describe` is Required
+
+- **Discoverability**: Workflow builders can query the STF to understand its capabilities without reading source code
+- **Automation**: AI agents can automatically generate correct `input_mappings` for workflows
+- **Validation**: The schema enables pre-execution validation of workflow inputs
+- **Documentation**: Acts as machine-readable, always up-to-date documentation
+
+### `describe` Request
+
+```json
+{
+  "input": {
+    "operation": "describe"
+  }
+}
+```
+
+### `describe` Response Format
+
+```json
+{
+  "output": {
+    "status": "success",
+    "operation": "describe",
+    "data": {
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": ["op1", "op2", "describe"],
+            "description": "The operation to perform"
+          }
+        },
+        "required": ["operation"]
+      },
+      "operations": {
+        "op1": {
+          "description": "Description of operation 1",
+          "required": ["param1", "param2"],
+          "optional": ["param3"]
+        },
+        "op2": {
+          "description": "Description of operation 2",
+          "required": ["param1"],
+          "optional": []
+        },
+        "describe": {
+          "description": "Returns the input schema and available operations",
+          "required": [],
+          "optional": []
+        }
+      }
+    }
+  }
+}
+```
+
+### Implementation Pattern (Python)
+
+```python
+def process_describe():
+    """Return the input schema and available operations."""
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["my_operation", "describe"],
+                        "description": "The operation to perform"
+                    },
+                    "param1": {
+                        "type": "string",
+                        "description": "Description of param1"
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "my_operation": {
+                    "description": "What this operation does",
+                    "required": ["param1"],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
+def main():
+    input_data = json.load(sys.stdin)
+    user_input = input_data["input"]
+    operation = user_input.get("operation")
+
+    # Handle describe before any other validation
+    if operation == "describe":
+        result = process_describe()
+    else:
+        # Validate and process other operations
+        ...
+
+    print(json.dumps({"output": result}))
+```
+
+### Best Practice: Workflow Creation with `describe`
+
+When creating workflows that use Docker STFs, always follow this process:
+
+1. **Run `describe` first** to get the input schema
+2. **Map all required parameters** in `input_mappings` based on the schema
+3. **Include optional parameters** where appropriate
+
+```bash
+# Step 1: Discover the STF's capabilities
+echo '{"workspace_id":"...","stf_id":"...","caller":null,"api_url":"...","api_token":"...","input":{"operation":"describe"},"sources":{}}' \
+  | docker run --rm -i my-stf:latest
+
+# Step 2: Use the returned schema to build the workflow input_mappings
 ```
 
 ## Common Patterns
@@ -310,7 +559,7 @@ def validate_input(user_input):
 try:
     validate_input(input_data["input"])
 except ValueError as e:
-    print(json.dumps({"error": str(e), "type": "ValidationError"}))
+    print(f"ValidationError: {e}", file=sys.stderr)
     sys.exit(1)
 ```
 
@@ -380,6 +629,19 @@ def call_external_api(url, params):
 # Build image
 docker build -t my-stf:latest .
 
+# Test describe operation first (always start with describe)
+echo '{
+  "workspace_id": "test-id",
+  "stf_id": "test-stf-id",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i my-stf:latest
+
 # Test with sample input
 echo '{
   "workspace_id": "test-id",
@@ -407,27 +669,247 @@ docker images my-stf:latest
 docker run --rm -i my-stf:latest < input.json 2>&1 | tee output.log
 ```
 
-## Troubleshooting
+## Registering and Running in d6e
 
-### Issue: "Policy violation" error
+### Credentials you need first
 
-**Cause:** STF doesn't have permission to access the table.
+Everything below needs a **workspace id** and a **Bearer token** for the
+d6e REST API (or an AI-agent session inside d6e, where the MCP tools
+handle auth for you). Any workspace member can obtain both — no
+d6e-auth admin involvement:
 
-**Solution:** Create policies:
+- **Workspace ID**: the UUID in every d6e console URL
+  (`{D6E_BASE_URL}/{locale}/workspaces/{uuid}/...`); the workspace
+  settings page's Integration section also shows it with a copy button
+  (admin view).
+- **Bearer token**: copy the `auth-token` cookie from a logged-in d6e
+  console session (~1 h lifetime), or mint a long-lived API key with it
+  (`POST /api/v1/api-keys` `{"name":"dev"}` → returns a `d6e_...` key
+  that works as the Bearer value). For scripts, the `auth-refresh`
+  cookie can be exchanged at `POST /api/v1/auth/token`
+  (`{"grant_type":"refresh_token","refresh_token":"..."}`) — it rotates
+  on each use.
+
+Send the workspace as an `X-Workspace-ID: {workspace_id}` header on
+every request; STF endpoints are **not** nested under
+`/workspaces/{id}/` in the URL.
+
+### Docker config JSON (the STF `code` field)
+
+A Docker STF's "code" is not source code — it is a JSON configuration
+that tells d6e which image to run:
+
+```json
+{
+  "image": "ghcr.io/your-org/your-stf:v1.0.0",
+  "command": ["python3", "main.py"],
+  "env": {
+    "LOG_LEVEL": "info",
+    "EXTERNAL_API_KEY": "placeholder"
+  },
+  "secret_keys": ["EXTERNAL_API_KEY"]
+}
+```
+
+| Field         | Type          | Required | Description                                                                                                          |
+| ------------- | ------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `image`       | String        | ✓        | Docker image reference. Must be pullable by the d6e host (public registry, or pre-pulled on the same Docker daemon). |
+| `command`     | Array[String] | -        | Override the container CMD. Must be an **array of strings**, not a single string.                                     |
+| `env`         | Object        | -        | Environment variables injected at `docker run` time. Keys must match `[A-Za-z_][A-Za-z0-9_]*`.                        |
+| `secret_keys` | Array[String] | -        | Keys from `env` whose real values are stored encrypted (see below). The `env` value for these keys is a placeholder.  |
+
+### Encrypted secrets for API keys
+
+Never put real API keys in the config JSON — it is stored (and often
+version-controlled) in plain text. Instead:
+
+1. List the key name in both `env` (with a placeholder value) and
+   `secret_keys`.
+2. Store the real value via the secrets API (workspace admin only):
+
+```
+POST {D6E_BASE_URL}/api/v1/stfs/{stf_id}/secrets
+Authorization: Bearer {jwt}
+X-Workspace-ID: {workspace_id}
+
+{ "env_key": "EXTERNAL_API_KEY", "value": "sk-real-value" }
+```
+
+`GET /api/v1/stfs/{stf_id}/secrets` lists key names only (values are
+never returned); `DELETE /api/v1/stfs/{stf_id}/secrets/{env_key}`
+removes one. At runtime d6e decrypts the stored value and injects it as
+the environment variable; a key listed in `secret_keys` without a
+stored value fails the execution with a clear error.
+
+If the STF is installed as part of a d6e App (`template.yaml`), the
+install dialog in the d6e console asks the installing admin for these
+values and stores them as secrets automatically — see the
+`d6e-app-development` skill.
+
+### Creating the STF
+
+**Via MCP tools (AI agent inside d6e):** `d6e_create_stf` creates the
+STF *and* its first version in one call:
 
 ```javascript
-// Create policy group
-d6e_create_policy_group({ name: "my-stf-group" });
+d6e_create_stf({
+  name: "my-stf",
+  description: "What this STF does",
+  version: "1.0.0",            // plain semver, no "v" prefix
+  runtime: "docker",
+  code: '{"image":"ghcr.io/your-org/your-stf:v1.0.0"}',  // config JSON as a string
+});
+// → returns the created STF; note its id and version id
+```
 
-// Add STF to group
-d6e_add_member_to_policy_group({
-  policy_group_id: "{group_id}",
-  member_type: "stf",
-  member_id: "{stf_id}",
+Ship an updated image under a new tag with `d6e_create_stf_version`:
+
+```javascript
+d6e_create_stf_version({
+  stf_id: "{stf_id}",
+  version: "1.1.0",
+  runtime: "docker",
+  code: '{"image":"ghcr.io/your-org/your-stf:v1.1.0"}',
+});
+```
+
+**Via REST API:** `POST /api/v1/stfs` with the same fields, except
+`code` must be **base64-encoded**:
+
+```
+POST {D6E_BASE_URL}/api/v1/stfs
+Authorization: Bearer {jwt}
+X-Workspace-ID: {workspace_id}
+
+{
+  "name": "my-stf",
+  "description": "What this STF does",
+  "version": "1.0.0",
+  "runtime": "docker",
+  "code": "<base64 of the config JSON>"
+}
+```
+
+### Verifying with describe / instant run
+
+Before wiring the STF into a workflow, verify it end-to-end:
+
+```javascript
+// Runs the container with {"operation": "describe"} and returns the schema
+d6e_describe_stf({ id: "{stf_id}" });
+
+// Runs the STF once with arbitrary input — no workflow needed.
+// input must be a JSON value, NOT an escaped JSON string.
+d6e_instant_run_stf({
+  stf_id: "{stf_id}",
+  input: { operation: "your_operation", param1: "value1" },
+});
+```
+
+REST equivalents: `POST /api/v1/stfs/{id}/describe` (no body) and
+`POST /api/v1/stfs/instant-run` with
+`{ "stf_id": "...", "input": {...}, "sources": {} }`. Both return
+`{ success, output | data, error }` — a failed container run comes back
+as `success: false` with the stderr text in `error` instead of an HTTP
+error.
+
+### Wiring into a workflow
+
+Workflow STF steps reference a **specific STF version** by
+`stf_version_id` (not by name or stf_id):
+
+```javascript
+d6e_create_workflow({
+  name: "my-stf-workflow",
+  input_steps: [],
+  stf_steps: [
+    {
+      stf_version_id: "{version id from d6e_create_stf / d6e_list_stf_versions}",
+      input_mappings: [
+        { source: { type: "Variable", value: "$input.operation" }, target: "operation" },
+        { source: { type: "Variable", value: "$input.param1" }, target: "param1" },
+      ],
+    },
+  ],
+  effect_steps: [],
 });
 
-// Grant access
+d6e_execute_workflow({
+  id: "{workflow_id}",
+  input: { operation: "your_operation", param1: "value1" },
+});
+```
+
+Variable paths must start with `$input` (workflow input),
+`$sources.{step_name}` (input step results), or `$steps[n]` (0-based
+output of a previous STF step). A path that resolves to a missing field
+maps to `null` rather than failing.
+
+### Granting SQL access (policies)
+
+A Docker STF has **no table access by default** — SQL calls fail with
+`POLICY_DENIED` until the STF is added to a policy group that has allow
+policies. Membership is set through the `stf_ids` array (there is no
+separate "add member" tool):
+
+```javascript
+// Create a policy group with the STF as a member
+d6e_create_policy_group({
+  name: "my-stf-policies",
+  user_ids: [],
+  stf_ids: ["{stf_id}"],
+});
+
+// Or add the STF to an existing group
+d6e_update_policy_group({
+  id: "{policy_group_id}",
+  stf_ids: ["{stf_id}", "...existing ids"],
+});
+
+// Grant one policy per table x operation
 d6e_create_policy({
+  name: "my-stf can read my_table",
+  policy_group_id: "{policy_group_id}",
+  table_name: "my_table",
+  operation: "select",       // select | insert | update | delete
+  mode: "allow",             // allow | deny
+});
+```
+
+Row-level restrictions use the optional `condition` field (a modql JSON
+object, e.g. `{"owner_id": {"$eq": {"$var": "user_id"}}}`), not a SQL
+`WHERE` string.
+
+### Execution limits
+
+| Limit          | Default   | Operator override            |
+| -------------- | --------- | ----------------------------- |
+| Execution time | 5 minutes | `STF_DOCKER_TIMEOUT_SECS`     |
+| stdout/stderr  | 10 MB     | `STF_DOCKER_MAX_OUTPUT_BYTES` |
+
+Containers run with `--rm -i --network=bridge` and
+`--add-host=host.docker.internal:host-gateway`, so outbound network
+access is available for external API calls.
+
+## Troubleshooting
+
+### Issue: "POLICY_DENIED" error on SQL calls
+
+**Cause:** The STF is not a member of any policy group with an allow
+policy for that table + operation.
+
+**Solution:** Create a policy group with the STF in `stf_ids` and add
+policies (see [Granting SQL access](#granting-sql-access-policies)):
+
+```javascript
+d6e_create_policy_group({
+  name: "my-stf-group",
+  user_ids: [],
+  stf_ids: ["{stf_id}"],
+});
+
+d6e_create_policy({
+  name: "my-stf select my_table",
   policy_group_id: "{group_id}",
   table_name: "my_table",
   operation: "select",
@@ -435,18 +917,27 @@ d6e_create_policy({
 });
 ```
 
-### Issue: Output not appearing in D6E
+Note: there is no `d6e_add_member_to_policy_group` tool — membership
+is the `stf_ids` / `user_ids` arrays on
+`d6e_create_policy_group` / `d6e_update_policy_group`.
 
-**Cause:** Output not in correct JSON format.
+### Issue: "Invalid Docker output format" / output not appearing in D6E
 
-**Solution:** Always use `{"output": {...}}` format:
+**Cause:** stdout is not a single `{"output": ...}` JSON document.
+
+**Solution:** Always use `{"output": {...}}` format and keep every log
+line on stderr:
 
 ```python
 # ✅ Correct
 print(json.dumps({"output": {"status": "success"}}))
 
-# ❌ Wrong
+# ❌ Wrong: missing the "output" wrapper
 print(json.dumps({"status": "success"}))
+
+# ❌ Wrong: extra stdout noise breaks JSON parsing
+print("Processing started...")
+print(json.dumps({"output": {"status": "success"}}))
 ```
 
 ### Issue: "Image not found" in D6E
@@ -534,29 +1025,45 @@ Use the following template for your Docker STF README:
 
 To use this Docker image from a D6E AI agent, follow these steps to create and execute the STF.
 
-### Step 1: Create the STF
+### Step 1: Create the STF (with its first version)
+
+`d6e_create_stf` creates the STF and its first version in a single call:
 
 ```javascript
 d6e_create_stf({
   name: "{stf-name}",
   description: "{Description of the STF functionality}",
-});
-```
-
-### Step 2: Create the STF Version
-
-```javascript
-d6e_create_stf_version({
-  stf_id: "{stf_id from Step 1}",
   version: "1.0.0",
   runtime: "docker",
   code: '{"image":"ghcr.io/{org}/{stf-name}:latest"}',
 });
+// → note the returned STF id
 ```
 
 **Important**: Always set `runtime` to `"docker"` and format the `code` field as a JSON string: `{"image":"ghcr.io/{org}/{stf-name}:latest"}`.
 
-### Step 3: Create the Workflow
+### Step 2: Discover the STF's Capabilities (describe)
+
+Run `describe` to get the full input schema before creating any workflow:
+
+```javascript
+d6e_describe_stf({ id: "{stf_id}" });
+```
+
+Use the returned schema to confirm required/optional parameters for each operation.
+
+### Step 3: Smoke-Test with Instant Run (optional but recommended)
+
+```javascript
+d6e_instant_run_stf({
+  stf_id: "{stf_id}",
+  input: { operation: "{operation_name}", param1: "value1" },
+});
+```
+
+### Step 4: Create the Workflow
+
+Look up the version id (`d6e_list_stf_versions({ stf_id })` or the create response), then reference it via `stf_version_id`:
 
 ```javascript
 d6e_create_workflow({
@@ -564,32 +1071,36 @@ d6e_create_workflow({
   input_steps: [],
   stf_steps: [
     {
-      stf_id: "{stf_id}",
-      version: "1.0.0",
+      stf_version_id: "{stf_version_id}",
+      input_mappings: [
+        { source: { type: "Variable", value: "$input.operation" }, target: "operation" },
+        { source: { type: "Variable", value: "$input.param1" }, target: "param1" },
+      ],
     },
   ],
   effect_steps: [],
 });
 ```
 
-### Step 4: Execute the Workflow
+### Step 5: Execute the Workflow
 
 ```javascript
 d6e_execute_workflow({
-  workflow_id: "{workflow_id}",
+  id: "{workflow_id}",
   input: {
     operation: "{operation_name}",
-    // ...operation-specific parameters
+    // ...operation-specific parameters (based on describe output)
   },
 });
 ```
 
 ## Supported Operations
 
-| Operation | Required Parameters | Optional | DB Required | Description |
-|-----------|---------------------|----------|-------------|-------------|
-| `{operation_1}` | `param1`, `param2` | `optional1` | ❌/✅ | {Description} |
-| `{operation_2}` | `param1` | - | ❌/✅ | {Description} |
+| Operation       | Required Parameters | Optional    | DB Required | Description                                   |
+| --------------- | ------------------- | ----------- | ----------- | --------------------------------------------- |
+| `describe`      | -                   | -           | ❌          | Returns input schema and available operations |
+| `{operation_1}` | `param1`, `param2`  | `optional1` | ❌/✅       | {Description}                                 |
+| `{operation_2}` | `param1`            | -           | ❌/✅       | {Description}                                 |
 
 ## Input/Output Examples
 
@@ -629,18 +1140,22 @@ Use the Docker skill for {task description} in D6E.
 Docker Image: ghcr.io/{org}/{stf-name}:latest
 
 Steps:
-1. Create STF with d6e_create_stf (name: "{stf-name}")
-2. Create STF version with d6e_create_stf_version:
+1. Create STF with d6e_create_stf (one call creates STF + first version):
+   - name: "{stf-name}"
+   - version: "1.0.0"
    - runtime: "docker"
    - code: "{\"image\":\"ghcr.io/{org}/{stf-name}:latest\"}"
-3. Create workflow with d6e_create_workflow
-4. Execute with d6e_execute_workflow
+2. Run d6e_describe_stf to discover the input schema
+3. Smoke-test with d6e_instant_run_stf
+4. Create workflow with d6e_create_workflow (stf_steps reference stf_version_id)
+5. Execute with d6e_execute_workflow
 
 Supported operations:
+- "describe": Returns input schema and available operations (run this first)
 - "{operation_1}": {description} (required: {required_params})
 - "{operation_2}": {description} (required: {required_params})
 
-Start with {recommended_first_operation} to verify the setup.
+Start with describe to verify the setup and discover parameters.
 ```
 
 ### Task-Specific Prompt
@@ -669,18 +1184,21 @@ Include the following in the results:
 Docker Image: ghcr.io/{org}/{stf-name}:latest
 
 Execution steps:
-1. Create STF (name: "{stf-name}", runtime: "docker")
+1. Create STF (name: "{stf-name}", version: "1.0.0", runtime: "docker",
+   code: JSON string with the image reference)
 
-2. {First operation description}:
+2. Run d6e_describe_stf to discover available operations and parameters
+
+3. {First operation description}:
    - operation: "{operation_1}"
    - param1: value1
    - param2: value2
 
-3. {Second operation description}:
+4. {Second operation description}:
    - operation: "{operation_2}"
    - param1: value1
 
-4. Display results:
+5. Display results:
    - {Output item 1}
    - {Output item 2}
 
@@ -703,7 +1221,20 @@ Execution steps:
 # Build
 docker build -t {stf-name}:latest .
 
-# Test
+# Test describe first (verify input schema)
+echo '{
+  "workspace_id": "test-ws",
+  "stf_id": "test-stf",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i {stf-name}:latest
+
+# Test operation
 echo '{
   "workspace_id": "test-ws",
   "stf_id": "test-stf",
@@ -720,33 +1251,43 @@ echo '{
 
 ## Related Documentation
 
-- [Project README](../README.md)
+- [Project README](../../README.md)
 - {Additional documentation links}
 ````
 
 ### Key Points for README Creation
 
 1. **Explicit Docker Registration Instructions**
+
    - Always specify `runtime: "docker"`
    - Format `code` as JSON string: `'{"image":"..."}'`
    - Include the full image path with tag
 
-2. **AI-Friendly Operation Tables**
+2. **Always Include the `describe` Operation**
+
+   - List `describe` as the first operation in the Supported Operations table
+   - Show a describe test in the Local Build and Test section
+   - Recommend running `describe` first in all prompts
+
+3. **AI-Friendly Operation Tables**
+
    - Use consistent table format
    - Clearly mark database requirements (❌/✅)
    - List all required and optional parameters
 
-3. **Ready-to-Use Prompts**
+4. **Ready-to-Use Prompts**
+
    - Provide multiple prompt examples (basic, specific, complete)
    - Include all necessary parameters in prompts
-   - Suggest a recommended first operation for testing
+   - Always suggest `describe` as the first operation to verify setup
 
-4. **Clear Input/Output Examples**
+5. **Clear Input/Output Examples**
+
    - Show complete JSON structures
    - Include both success and error response examples
    - Document all possible output fields
 
-5. **Self-Contained Instructions**
+6. **Self-Contained Instructions**
    - Users should be able to copy the README and prompt to an AI agent
    - The AI agent should be able to execute without additional context
    - All steps should be clearly numbered and ordered

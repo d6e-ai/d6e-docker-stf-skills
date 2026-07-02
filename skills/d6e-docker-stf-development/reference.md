@@ -11,32 +11,95 @@ interface STFInput {
   workspace_id: string;  // UUID of the workspace
   stf_id: string;        // UUID of the STF
   caller: string | null; // UUID of the user who triggered execution
-  api_url: string;       // Internal API URL (e.g., "http://api:8080")
-  api_token: string;     // Internal API authentication token
+  api_url: string;       // API URL reachable from inside the container
+                         // (default "http://host.docker.internal:8080")
+  api_token: string;     // Signed, short-lived per-execution token
   input: Record<string, any>;  // User-defined input parameters
-  sources: Record<string, {    // Output from previous workflow steps
-    output: any;
-  }>;
+  sources: Record<string, any>; // Resolved workflow input-step values,
+                                // keyed by step name (NO {output} wrapper)
 }
 ```
 
+`sources` values depend on the input step's source type:
+
+| Source type | Resolved value shape |
+|-------------|----------------------|
+| `Library` | `{ "code": string, "types": string, "version": string }` |
+| `File` (JSON content type) | the parsed JSON value |
+| `File` (text content type) | the file body as a string |
+| `File` (binary) | `{ "filename", "content_type", "size", "data": "<base64>" }` |
+| `Fetch` | the parsed JSON response body |
+
 ### Output Schema (TypeScript)
 
-**Success Response:**
+**Success:** exactly one JSON document on stdout, exit code 0.
+
 ```typescript
 interface SuccessOutput {
   output: Record<string, any>;  // User-defined result data
 }
 ```
 
-**Error Response:**
+The engine parses the **entire stdout** as one JSON document and requires
+the top-level `output` key. Log lines mixed into stdout break parsing with
+an `Invalid Docker output format` error — send all logs to stderr.
+
+**Error:** there is no error JSON contract on stdout. Write the
+human-readable failure reason to **stderr** and exit with a non-zero
+code; d6e marks the step failed and surfaces the stderr text as the
+error message.
+
+## The `describe` Operation
+
+Every Docker STF must implement a `describe` operation that returns the input schema and available operations. This enables discoverability and automation.
+
+### Describe Request Schema (TypeScript)
+
 ```typescript
-interface ErrorOutput {
-  error: string;                  // Error message
-  type?: string;                  // Error type (e.g., "ValidationError")
-  details?: Record<string, any>;  // Additional error details
+interface DescribeRequest {
+  input: {
+    operation: "describe";
+  };
 }
 ```
+
+### Describe Response Schema (TypeScript)
+
+```typescript
+interface DescribeResponse {
+  output: {
+    status: "success";
+    operation: "describe";
+    data: {
+      input_schema: {
+        type: "object";
+        properties: Record<string, {
+          type: string;
+          enum?: string[];
+          description?: string;
+          items?: Record<string, any>;
+          properties?: Record<string, any>;
+          required?: string[];
+        }>;
+        required: string[];
+      };
+      operations: Record<string, {
+        description: string;
+        required: string[];
+        optional: string[];
+      }>;
+    };
+  };
+}
+```
+
+### Implementation Guidelines
+
+1. **Handle `describe` before other validations** - The `describe` operation should not require any parameters other than `operation`
+2. **Include all operations in the enum** - The `operation` property's `enum` should list all supported operations including `describe` itself
+3. **Document every parameter** - Include `description` for each property in `input_schema`
+4. **Specify required vs optional** - Each operation must clearly list its required and optional parameters
+5. **Keep schema in sync** - Update the `describe` output whenever you add or modify operations
 
 ## SQL API Reference
 
@@ -66,14 +129,19 @@ POST /api/v1/workspaces/{workspace_id}/sql
 
 ### Response Body
 
+Fields are present only when applicable (SELECT returns `rows`,
+INSERT/UPDATE/DELETE return `affected_rows`):
+
 ```json
-{
-  "rows": [
-    {"id": "abc123", "name": "John", "email": "john@example.com"}
-  ],
-  "affected_rows": 1
-}
+// SELECT
+{ "rows": [ {"id": "abc123", "name": "John"} ] }
+
+// INSERT / UPDATE / DELETE
+{ "affected_rows": 1 }
 ```
+
+The response may also include `executed_sql` (the transformed SQL that
+actually ran) for debugging.
 
 ### Allowed SQL Operations
 
@@ -83,35 +151,104 @@ POST /api/v1/workspaces/{workspace_id}/sql
 | INSERT | ✅ Yes | `INSERT INTO table (col) VALUES ('val')` |
 | UPDATE | ✅ Yes | `UPDATE table SET col = 'val' WHERE id = '123'` |
 | DELETE | ✅ Yes | `DELETE FROM table WHERE id = '123'` |
-| CREATE | ❌ No | DDL not allowed |
-| DROP | ❌ No | DDL not allowed |
-| ALTER | ❌ No | DDL not allowed |
+| CREATE / DROP / ALTER | ❌ No | DDL is rejected for STF calls (`DDL_FORBIDDEN`) |
+| BEGIN / COMMIT | ❌ No | Transactions are rejected (`TRANSACTION_NOT_ALLOWED`) |
+| Multiple statements | ❌ No | One statement per request (`MULTIPLE_STATEMENTS`) |
+
+Additional constraints:
+
+- Table names must be **23 characters or less**; d6e rewrites them into
+  the workspace's private schema (`INVALID_TABLE` on violation).
+- Tables must be created beforehand (by a workspace member via the d6e
+  console/agent), since STFs cannot run DDL.
 
 ### SQL API Error Responses
 
-**Permission Denied:**
+All errors share the shape `{ "error": string, "code": string }`.
+
+| Code | HTTP | Meaning |
+|------|------|---------|
+| `POLICY_DENIED` | 403 | No allow policy for this table + operation (most common for new STFs) |
+| `DDL_FORBIDDEN` | 403 | DDL statement from an STF |
+| `PARSE_ERROR` | 400 | SQL could not be parsed |
+| `INVALID_TABLE` | 400 | Table name too long or otherwise invalid |
+| `TRANSACTION_NOT_ALLOWED` | 400 | BEGIN/COMMIT/ROLLBACK used |
+| `MULTIPLE_STATEMENTS` | 400 | More than one statement in the request |
+| `EXECUTION_ERROR` | 400 | Runtime database error (constraint violation, type mismatch, ...) |
+| `WORKSPACE_MISMATCH` | 403 | Path workspace differs from the token's workspace |
+
+Example:
+
 ```json
 {
-  "error": "Permission denied for table 'users'",
-  "code": "PERMISSION_DENIED"
+  "error": "Access denied by policy",
+  "code": "POLICY_DENIED"
 }
 ```
 
-**DDL Not Allowed:**
+## STF Registration API Reference
+
+### Docker config JSON (the `code` field)
+
 ```json
 {
-  "error": "DDL operations are not allowed",
-  "code": "DDL_FORBIDDEN"
+  "image": "ghcr.io/your-org/your-stf:v1.0.0",
+  "command": ["python3", "main.py"],
+  "env": { "LOG_LEVEL": "info", "EXTERNAL_API_KEY": "placeholder" },
+  "secret_keys": ["EXTERNAL_API_KEY"]
 }
 ```
 
-**SQL Syntax Error:**
-```json
-{
-  "error": "Syntax error near 'SELCT'",
-  "code": "SYNTAX_ERROR"
-}
-```
+- `image` (string, required): image reference pullable by the d6e host.
+- `command` (array of strings, optional): overrides the container CMD.
+- `env` (object, optional): environment variables injected at run time.
+  Keys must match `[A-Za-z_][A-Za-z0-9_]*`.
+- `secret_keys` (array of strings, optional): env keys whose real values
+  come from the encrypted secrets store instead of the config JSON.
+
+### Endpoints
+
+| Endpoint | Method | Notes |
+|----------|--------|-------|
+| `/api/v1/stfs` | POST | Creates STF **and first version**. Body: `name`, `description`, `version`, `runtime: "docker"`, `code` (**base64** of config JSON) |
+| `/api/v1/stfs/{id}/versions` | POST | Adds a new version (`version`, `runtime`, `code` base64) |
+| `/api/v1/stfs/{id}/describe` | POST | Runs the container with `{"operation": "describe"}`; returns `{ success, data, error }` |
+| `/api/v1/stfs/instant-run` | POST | Body `{ "stf_id", "input", "sources" }`; runs once without a workflow, returns `{ success, output, error }` |
+| `/api/v1/stfs/{id}/secrets` | GET/POST | List key names / store `{ "env_key", "value" }` (encrypted at rest) |
+| `/api/v1/stfs/{id}/secrets/{env_key}` | DELETE | Remove a stored secret |
+
+All require `Authorization: Bearer {jwt}` + `X-Workspace-ID: {workspace_id}`.
+MCP equivalents (`d6e_create_stf`, `d6e_create_stf_version`,
+`d6e_describe_stf`, `d6e_instant_run_stf`) take the config JSON as a
+plain string — no base64.
+
+Where the Bearer token comes from (any workspace member works; no
+d6e-auth admin needed):
+
+- **Console session JWT** — log in to the d6e console and copy the
+  `auth-token` cookie from dev tools (expires in ~1 hour).
+- **Refresh flow** — copy the `auth-refresh` cookie once, then POST
+  `{"grant_type":"refresh_token","refresh_token":"..."}` to
+  `{api_url}/api/v1/auth/token` whenever you need a fresh
+  `access_token` (the refresh token rotates on each use).
+- **API key** — with a session JWT, `POST /api/v1/api-keys`
+  `{"name":"dev"}` returns a long-lived `d6e_...` key usable as the
+  Bearer value. API keys are created via this endpoint only (no console
+  UI yet).
+
+The workspace UUID is visible in every d6e console URL
+(`/workspaces/{uuid}/...`) and on the workspace settings page's
+Integration section.
+
+### Execution limits
+
+| Limit | Default | Operator override |
+|-------|---------|-------------------|
+| Execution time | 5 minutes | `STF_DOCKER_TIMEOUT_SECS` |
+| stdout/stderr size | 10 MB | `STF_DOCKER_MAX_OUTPUT_BYTES` |
+
+Containers run with `--rm -i --network=bridge` and
+`--add-host=host.docker.internal:host-gateway`.
 
 ## Complete Language Implementations
 
@@ -205,13 +342,65 @@ class ValidationError(Exception):
     pass
 
 
+def process_describe() -> Dict[str, Any]:
+    """Return the input schema and available operations."""
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["query_data", "insert_data", "process_data", "describe"],
+                        "description": "The operation to perform"
+                    },
+                    "table_name": {
+                        "type": "string",
+                        "description": "Target table name for query or insert operations"
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "description": "Array of data objects to insert"
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "query_data": {
+                    "description": "Query data from a table",
+                    "required": ["table_name"],
+                    "optional": []
+                },
+                "insert_data": {
+                    "description": "Insert data into a table",
+                    "required": ["table_name", "data"],
+                    "optional": []
+                },
+                "process_data": {
+                    "description": "Process data with custom logic",
+                    "required": [],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
+
 def validate_input(user_input: Dict[str, Any]) -> None:
     """Validate user input"""
     if "operation" not in user_input:
         raise ValidationError("Missing required field: operation")
     
     operation = user_input["operation"]
-    if operation not in ["query_data", "insert_data", "process_data"]:
+    if operation not in ["query_data", "insert_data", "process_data", "describe"]:
         raise ValidationError(f"Invalid operation: {operation}")
 
 
@@ -281,6 +470,13 @@ def main():
             api_token=input_data["api_token"]
         )
         
+        # Handle describe operation before validation
+        if input_data["input"].get("operation") == "describe":
+            result = process_describe()
+            print(json.dumps({"output": result}))
+            logger.info("Describe operation completed")
+            return
+        
         # Validate input
         validate_input(input_data["input"])
         
@@ -298,19 +494,12 @@ def main():
         logger.info("STF execution completed successfully")
         
     except ValidationError as e:
-        logger.error(f"Validation error: {str(e)}")
-        print(json.dumps({
-            "error": str(e),
-            "type": "ValidationError"
-        }))
+        # stderr + non-zero exit: d6e surfaces stderr as the failure reason
+        logger.error(f"ValidationError: {str(e)}")
         sys.exit(1)
     
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        print(json.dumps({
-            "error": str(e),
-            "type": type(e).__name__
-        }))
+        logger.error(f"{type(e).__name__}: {str(e)}", exc_info=True)
         sys.exit(1)
 
 
@@ -359,7 +548,7 @@ interface STFInput {
   api_url: string;
   api_token: string;
   input: Record<string, any>;
-  sources: Record<string, { output: any }>;
+  sources: Record<string, any>; // resolved values, no {output} wrapper
 }
 
 interface STFContext {
@@ -421,12 +610,58 @@ class ValidationError extends Error {
   }
 }
 
+function processDescribe(): Record<string, any> {
+  return {
+    status: 'success',
+    operation: 'describe',
+    data: {
+      input_schema: {
+        type: 'object',
+        properties: {
+          operation: {
+            type: 'string',
+            enum: ['query_data', 'insert_data', 'process_data', 'describe'],
+            description: 'The operation to perform',
+          },
+          table_name: {
+            type: 'string',
+            description: 'Target table name for query or insert operations',
+          },
+        },
+        required: ['operation'],
+      },
+      operations: {
+        query_data: {
+          description: 'Query data from a table',
+          required: ['table_name'],
+          optional: [],
+        },
+        insert_data: {
+          description: 'Insert data into a table',
+          required: ['table_name', 'data'],
+          optional: [],
+        },
+        process_data: {
+          description: 'Process data with custom logic',
+          required: [],
+          optional: [],
+        },
+        describe: {
+          description: 'Returns the input schema and available operations',
+          required: [],
+          optional: [],
+        },
+      },
+    },
+  };
+}
+
 function validateInput(userInput: Record<string, any>): void {
   if (!userInput.operation) {
     throw new ValidationError('Missing required field: operation');
   }
 
-  const validOperations = ['query_data', 'insert_data', 'process_data'];
+  const validOperations = ['query_data', 'insert_data', 'process_data', 'describe'];
   if (!validOperations.includes(userInput.operation)) {
     throw new ValidationError(`Invalid operation: ${userInput.operation}`);
   }
@@ -485,6 +720,14 @@ async function main() {
       apiToken: input.api_token,
     };
 
+    // Handle describe operation before validation
+    if (input.input.operation === 'describe') {
+      const result = processDescribe();
+      console.log(JSON.stringify({ output: result }));
+      console.error('[INFO] Describe operation completed');
+      return;
+    }
+
     // Validate input
     validateInput(input.input);
 
@@ -496,19 +739,11 @@ async function main() {
     console.log(JSON.stringify({ output: result }));
     console.error('[INFO] STF execution completed successfully');
   } catch (error: any) {
-    if (error instanceof ValidationError) {
-      console.error(`[ERROR] Validation error: ${error.message}`);
-      console.log(JSON.stringify({
-        error: error.message,
-        type: 'ValidationError',
-      }));
-    } else {
-      console.error(`[ERROR] Unexpected error: ${error.message}`);
-      console.log(JSON.stringify({
-        error: error.message,
-        type: error.name || 'Error',
-      }));
-    }
+    // stderr + non-zero exit: d6e surfaces stderr as the failure reason
+    const errorType = error instanceof ValidationError
+      ? 'ValidationError'
+      : error.name || 'Error';
+    console.error(`[ERROR] ${errorType}: ${error.message}`);
     process.exit(1);
   }
 }
@@ -680,6 +915,52 @@ func (c *APIClient) ExecuteSQL(sql string) (*SQLResponse, error) {
 	return &sqlResp, nil
 }
 
+func processDescribe() map[string]interface{} {
+	return map[string]interface{}{
+		"status":    "success",
+		"operation": "describe",
+		"data": map[string]interface{}{
+			"input_schema": map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"operation": map[string]interface{}{
+						"type":        "string",
+						"enum":        []string{"query_data", "insert_data", "process_data", "describe"},
+						"description": "The operation to perform",
+					},
+					"table_name": map[string]interface{}{
+						"type":        "string",
+						"description": "Target table name for query or insert operations",
+					},
+				},
+				"required": []string{"operation"},
+			},
+			"operations": map[string]interface{}{
+				"query_data": map[string]interface{}{
+					"description": "Query data from a table",
+					"required":    []string{"table_name"},
+					"optional":    []string{},
+				},
+				"insert_data": map[string]interface{}{
+					"description": "Insert data into a table",
+					"required":    []string{"table_name", "data"},
+					"optional":    []string{},
+				},
+				"process_data": map[string]interface{}{
+					"description": "Process data with custom logic",
+					"required":    []string{},
+					"optional":    []string{},
+				},
+				"describe": map[string]interface{}{
+					"description": "Returns the input schema and available operations",
+					"required":    []string{},
+					"optional":    []string{},
+				},
+			},
+		},
+	}
+}
+
 func validateInput(userInput map[string]interface{}) error {
 	operation, ok := userInput["operation"].(string)
 	if !ok {
@@ -690,6 +971,7 @@ func validateInput(userInput map[string]interface{}) error {
 		"query_data":   true,
 		"insert_data":  true,
 		"process_data": true,
+		"describe":     true,
 	}
 
 	if !validOps[operation] {
@@ -743,7 +1025,7 @@ func main() {
 	// Read input from stdin
 	var input STFInput
 	if err := json.NewDecoder(os.Stdin).Decode(&input); err != nil {
-		outputError(fmt.Sprintf("Failed to parse input: %s", err.Error()), "ParseError")
+		log.Printf("ParseError: failed to parse input: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -755,21 +1037,27 @@ func main() {
 		APIToken:    input.APIToken,
 	}
 
+	// Handle describe operation before validation
+	if operation, ok := input.Input["operation"].(string); ok && operation == "describe" {
+		result := processDescribe()
+		output := map[string]interface{}{"output": result}
+		json.NewEncoder(os.Stdout).Encode(output)
+		log.Println("Describe operation completed")
+		return
+	}
+
 	// Validate input
+	// (stderr + non-zero exit: d6e surfaces stderr as the failure reason)
 	if err := validateInput(input.Input); err != nil {
-		if ve, ok := err.(*ValidationError); ok {
-			log.Printf("Validation error: %s", ve.Message)
-			outputError(ve.Message, "ValidationError")
-			os.Exit(1)
-		}
+		log.Printf("ValidationError: %s", err.Error())
+		os.Exit(1)
 	}
 
 	// Process
 	apiClient := NewAPIClient(context)
 	result, err := process(input.Input, input.Sources, apiClient)
 	if err != nil {
-		log.Printf("Processing error: %s", err.Error())
-		outputError(err.Error(), "ProcessingError")
+		log.Printf("ProcessingError: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -781,14 +1069,6 @@ func main() {
 	}
 
 	log.Println("STF execution completed successfully")
-}
-
-func outputError(message string, errorType string) {
-	errorOutput := map[string]interface{}{
-		"error": message,
-		"type":  errorType,
-	}
-	json.NewEncoder(os.Stdout).Encode(errorOutput)
 }
 ```
 
@@ -832,28 +1112,31 @@ D6E uses a policy-based access control system. Docker STFs must be granted expli
 
 ### Creating Policies
 
-**Step 1: Create Policy Group**
+**Step 1: Create Policy Group with the STF as a member**
+
+Membership is passed directly as `stf_ids` / `user_ids` arrays — there
+is no separate "add member" tool:
+
 ```javascript
 const group = await d6e_create_policy_group({
   name: "my-stf-policies",
-  description: "Policies for my Docker STF"
+  user_ids: [],
+  stf_ids: [stfId],  // The STF ID from d6e_create_stf
 });
 const policyGroupId = group.id;
+
+// To change membership later:
+// d6e_update_policy_group({ id: policyGroupId, stf_ids: [...] })
 ```
 
-**Step 2: Add STF as Member**
-```javascript
-await d6e_add_member_to_policy_group({
-  policy_group_id: policyGroupId,
-  member_type: "stf",
-  member_id: stfId  // The STF ID from d6e_create_stf
-});
-```
+**Step 2: Grant Table Permissions**
 
-**Step 3: Grant Table Permissions**
+Every policy requires a `name`:
+
 ```javascript
 // Allow SELECT
 await d6e_create_policy({
+  name: "my-stf select users",
   policy_group_id: policyGroupId,
   table_name: "users",
   operation: "select",
@@ -862,25 +1145,26 @@ await d6e_create_policy({
 
 // Allow INSERT
 await d6e_create_policy({
+  name: "my-stf insert logs",
   policy_group_id: policyGroupId,
   table_name: "logs",
   operation: "insert",
   mode: "allow"
 });
 
-// Allow UPDATE
+// Allow UPDATE with a row-level condition (modql JSON, not SQL text)
 await d6e_create_policy({
+  name: "my-stf update pending records",
   policy_group_id: policyGroupId,
   table_name: "records",
   operation: "update",
   mode: "allow",
-  conditions: {
-    where: "status = 'pending'"  // Optional: restrict updates
-  }
+  condition: { "status": { "$eq": "pending" } }
 });
 
 // Allow DELETE
 await d6e_create_policy({
+  name: "my-stf delete temp_data",
   policy_group_id: policyGroupId,
   table_name: "temp_data",
   operation: "delete",
@@ -948,13 +1232,13 @@ def process_batch(api_client, items, batch_size=100):
 
 ```python
 def process_with_cache(user_input, sources, api_client):
-    """Use previous step output as cache"""
+    """Use a workflow input step's value as pre-fetched data"""
     cache_key = f"data_{user_input['table_name']}"
     
-    # Check if data exists in sources (cache)
+    # sources maps step names directly to resolved values (no "output" wrapper)
     if cache_key in sources:
-        logger.info("Using cached data")
-        return sources[cache_key]["output"]
+        logger.info("Using data provided by the workflow input step")
+        return sources[cache_key]
     
     # Fetch fresh data
     logger.info("Fetching fresh data")

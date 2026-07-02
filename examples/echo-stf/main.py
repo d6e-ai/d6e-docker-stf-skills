@@ -8,11 +8,13 @@ This is a minimal example of a D6E Docker STF that demonstrates:
 - Outputting JSON to stdout
 - Error handling
 - Logging to stderr
+- Self-describing input schema via the describe operation
 
 Operations:
 - echo: Returns the input message as-is
 - uppercase: Converts message to uppercase
 - lowercase: Converts message to lowercase
+- describe: Returns the input schema and available operations
 """
 
 import sys
@@ -53,6 +55,53 @@ def process_lowercase(message):
         "message": message.lower()
     }
 
+def process_describe():
+    """Describe operation - returns the input schema and available operations"""
+    logging.info("Describe operation")
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["echo", "uppercase", "lowercase", "describe"],
+                        "description": "The operation to perform"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The message to process"
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "echo": {
+                    "description": "Returns the input message as-is",
+                    "required": ["message"],
+                    "optional": []
+                },
+                "uppercase": {
+                    "description": "Converts message to uppercase",
+                    "required": ["message"],
+                    "optional": []
+                },
+                "lowercase": {
+                    "description": "Converts message to lowercase",
+                    "required": ["message"],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
 def main():
     """Main entry point"""
     try:
@@ -68,52 +117,44 @@ def main():
         # Extract user input
         user_input = input_data.get("input", {})
         operation = user_input.get("operation", "echo")
-        message = user_input.get("message", "")
         
-        # Validate input
-        if not message:
-            raise ValueError("Message is required")
-        
-        # Process based on operation
-        if operation == "echo":
-            result = process_echo(message)
-        elif operation == "uppercase":
-            result = process_uppercase(message)
-        elif operation == "lowercase":
-            result = process_lowercase(message)
+        # Handle describe operation first (no message required)
+        if operation == "describe":
+            result = process_describe()
         else:
-            raise ValueError(f"Unknown operation: {operation}")
+            # Validate message for other operations
+            message = user_input.get("message", "")
+            if not message:
+                raise ValueError("Message is required")
+            
+            # Process based on operation
+            if operation == "echo":
+                result = process_echo(message)
+            elif operation == "uppercase":
+                result = process_uppercase(message)
+            elif operation == "lowercase":
+                result = process_lowercase(message)
+            else:
+                raise ValueError(f"Unknown operation: {operation}")
         
         # Output result to stdout
         output = {"output": result}
         print(json.dumps(output))
         logging.info("Processing completed successfully")
         
+    # Error contract: write the reason to stderr and exit non-zero.
+    # d6e reports the step as failed with the container's stderr as the
+    # error message. Nothing must be printed to stdout on failure.
     except json.JSONDecodeError as e:
-        error_msg = f"Invalid JSON input: {str(e)}"
-        logging.error(error_msg)
-        print(json.dumps({
-            "error": error_msg,
-            "type": "JSONDecodeError"
-        }))
+        logging.error(f"JSONDecodeError: invalid JSON input: {str(e)}")
         sys.exit(1)
         
     except ValueError as e:
-        error_msg = str(e)
-        logging.error(error_msg)
-        print(json.dumps({
-            "error": error_msg,
-            "type": "ValueError"
-        }))
+        logging.error(f"ValueError: {str(e)}")
         sys.exit(1)
         
     except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        logging.error(error_msg, exc_info=True)
-        print(json.dumps({
-            "error": error_msg,
-            "type": type(e).__name__
-        }))
+        logging.error(f"{type(e).__name__}: unexpected error: {str(e)}", exc_info=True)
         sys.exit(1)
 
 if __name__ == "__main__":
