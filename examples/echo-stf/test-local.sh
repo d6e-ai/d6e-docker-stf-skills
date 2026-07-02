@@ -95,8 +95,10 @@ else
 fi
 
 # Test 4: Error handling - invalid operation
+# d6e's error contract: non-zero exit code + reason on stderr (stdout stays empty)
 echo "Test 4: Error handling (invalid operation)"
-OUTPUT=$(echo '{
+set +e
+STDERR=$(echo '{
   "workspace_id": "test",
   "stf_id": "test",
   "caller": null,
@@ -107,19 +109,22 @@ OUTPUT=$(echo '{
     "message": "test"
   },
   "sources": {}
-}' | docker run --rm -i ${IMAGE_NAME} 2>/dev/null || true)
+}' | docker run --rm -i ${IMAGE_NAME} 2>&1 >/dev/null)
+EXIT_CODE=$?
+set -e
 
-if echo "$OUTPUT" | jq -e '.error' > /dev/null; then
-  log_success "Test 4 passed (error handled correctly)"
+if [ "$EXIT_CODE" -ne 0 ] && [ -n "$STDERR" ]; then
+  log_success "Test 4 passed (non-zero exit + stderr message)"
 else
-  log_error "Test 4 failed (error not handled)"
-  echo "Output: $OUTPUT"
+  log_error "Test 4 failed (expected non-zero exit with stderr message)"
+  echo "Exit code: $EXIT_CODE / Stderr: $STDERR"
   exit 1
 fi
 
 # Test 5: Error handling - missing message
 echo "Test 5: Error handling (missing message)"
-OUTPUT=$(echo '{
+set +e
+STDERR=$(echo '{
   "workspace_id": "test",
   "stf_id": "test",
   "caller": null,
@@ -129,13 +134,15 @@ OUTPUT=$(echo '{
     "operation": "echo"
   },
   "sources": {}
-}' | docker run --rm -i ${IMAGE_NAME} 2>/dev/null || true)
+}' | docker run --rm -i ${IMAGE_NAME} 2>&1 >/dev/null)
+EXIT_CODE=$?
+set -e
 
-if echo "$OUTPUT" | jq -e '.error' > /dev/null; then
-  log_success "Test 5 passed (error handled correctly)"
+if [ "$EXIT_CODE" -ne 0 ] && [ -n "$STDERR" ]; then
+  log_success "Test 5 passed (non-zero exit + stderr message)"
 else
-  log_error "Test 5 failed (error not handled)"
-  echo "Output: $OUTPUT"
+  log_error "Test 5 failed (expected non-zero exit with stderr message)"
+  echo "Exit code: $EXIT_CODE / Stderr: $STDERR"
   exit 1
 fi
 

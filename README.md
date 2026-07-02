@@ -1,7 +1,6 @@
 # D6E Docker STF Skills
 
-[![Skills](https://img.shields.io/badge/skills.sh-d6e--docker--stf--skills-blue)](https://skills.sh/d6e-ai/d6e-docker-stf-skills/d6e-docker-stf-development)
-[![GitHub](https://img.shields.io/github/stars/d6e-ai/d6e-docker-stf-skills?style=social)](https://github.com/d6e-ai/d6e-docker-stf-skills)
+[![GitLab](https://img.shields.io/badge/GitLab-cauchye%2Fd6e--ai%2Fd6e--docker--stf--skills-FC6D26?logo=gitlab)](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Claude/Cursor Agent Skills for developing custom D6E Docker STFs.
@@ -37,10 +36,12 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 ### Quick Install (Recommended)
 
-Install this skill using the skills.sh CLI:
+Install this skill using the skills.sh CLI (the repository lives on
+GitLab, so pass the full URL — the GitHub-style `owner/repo` shorthand
+expands to github.com and will not work):
 
 ```bash
-npx skills add d6e-ai/d6e-docker-stf-skills
+npx skills add https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills --skill d6e-docker-stf-development
 ```
 
 This will automatically set up the skill in your Cursor environment.
@@ -51,7 +52,7 @@ This will automatically set up the skill in your Cursor environment.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 2. **Add to Cursor:**
@@ -68,7 +69,7 @@ This will automatically set up the skill in your Cursor environment.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 2. **Reference the skill:**
@@ -86,7 +87,7 @@ This will automatically set up the skill in your Cursor environment.
 1. **Open this repository in Cursor**
 
    ```bash
-   git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
    cd d6e-docker-stf-skills
    cursor .
    ```
@@ -248,9 +249,9 @@ cd examples/echo-stf
 ### External Resources
 
 - [skills.sh](https://skills.sh) - The Open Agent Skills Ecosystem
-- [D6E Platform](https://github.com/d6e-ai/d6e) - D6E main repository
-- [D6E Docker Runtime Guide](https://github.com/d6e-ai/d6e/blob/main/docs/08-stf-docker-runtime.md) - Docker Runtime details
-- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Sample Docker STF
+- [D6E Platform](https://gitlab.com/cauchye/d6e-ai/d6e) - D6E main repository
+- [D6E Docker Runtime Guide](https://gitlab.com/cauchye/d6e-ai/d6e/-/blob/main/docs/08-stf-docker-runtime.md) - Docker Runtime details
+- [examples/echo-stf](./examples/echo-stf/) - Sample Docker STF in this repository
 - [Claude Agent Skills Documentation](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Agent Skills overview
 - [Model Context Protocol](https://modelcontextprotocol.io) - MCP specification
 
@@ -388,5 +389,5 @@ Reason: Lacks specificity and expected results are unclear
 
 - [Agent Skills Overview](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Agent Skills overview
 - [Creating Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/creating) - How to create Agent Skills
-- [D6E Documentation](https://github.com/d6e-ai/d6e) - D6E platform
-- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Sample project
+- [D6E Documentation](https://gitlab.com/cauchye/d6e-ai/d6e) - D6E platform
+- [examples/echo-stf](./examples/echo-stf/) - Sample project in this repository

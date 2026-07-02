@@ -132,6 +132,13 @@ Fetches data from external API and stores in D6E database.
 
 **Use Case:** Fetch weather data from external API and store for reporting.
 
+> **Note on API keys:** passing an API key through `input` (as below)
+> means it appears in workflow inputs and logs. For production STFs,
+> prefer an environment variable declared in the Docker config's
+> `secret_keys` and stored via the STF secrets API — see
+> "Registering and Running in d6e" in SKILL.md. The code then reads
+> `os.getenv("WEATHER_API_KEY")` instead of `input`.
+
 **Input:**
 ```json
 {
@@ -460,14 +467,25 @@ def process(user_input, sources, api_client):
 
 ## Example 5: Multi-Step Workflow with Sources
 
-Uses output from previous workflow steps.
+Uses data provided by workflow **input steps** (`sources`) and explains
+how outputs of earlier STF steps arrive.
 
-**Use Case:** Fetch data, validate, then insert into database.
+**Use Case:** Fetch data via a workflow input step, validate it, then
+pass the valid records on to the next STF step.
 
 **Workflow Steps:**
-1. `data_fetcher`: Fetches raw data from external API
-2. `data_validator`: Validates the fetched data (this example)
-3. `data_inserter`: Inserts valid data into database
+1. Input step `data_fetcher` (type `Fetch`): retrieves raw data from an external API
+2. STF step `data_validator`: validates the fetched data (this example)
+3. STF step `data_inserter`: inserts valid data into database
+
+**How data reaches this STF:**
+
+- `sources.data_fetcher` is the **parsed JSON response body** of the
+  Fetch input step — the resolved value directly, with **no**
+  `{"output": ...}` wrapper.
+- Output from *earlier STF steps* does **not** appear in `sources`.
+  It is delivered through the workflow's `input_mappings` (e.g.
+  `$steps[0].valid`) and lands in this STF's `input` object.
 
 **Input (Step 2 - Validator):**
 ```json
@@ -477,14 +495,12 @@ Uses output from previous workflow steps.
   },
   "sources": {
     "data_fetcher": {
-      "output": {
-        "status": "success",
-        "records": [
-          {"id": 1, "name": "Product A", "price": 99.99, "stock": 50},
-          {"id": 2, "name": "Product B", "price": -10.00, "stock": 0},
-          {"id": 3, "name": "", "price": 149.99, "stock": 25}
-        ]
-      }
+      "status": "success",
+      "records": [
+        {"id": 1, "name": "Product A", "price": 99.99, "stock": 50},
+        {"id": 2, "name": "Product B", "price": -10.00, "stock": 0},
+        {"id": 3, "name": "", "price": 149.99, "stock": 25}
+      ]
     }
   }
 }
@@ -508,9 +524,9 @@ def validate_record(record):
     return errors
 
 def process(user_input, sources, context):
-    # Get data from previous step
-    fetcher_output = sources.get("data_fetcher", {}).get("output", {})
-    records = fetcher_output.get("records", [])
+    # sources maps the input step name directly to its resolved value
+    fetcher_result = sources.get("data_fetcher", {})
+    records = fetcher_result.get("records", [])
     
     if not records:
         raise ValueError("No records from data_fetcher step")

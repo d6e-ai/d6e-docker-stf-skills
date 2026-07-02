@@ -32,7 +32,7 @@ Documents to read before or alongside this guide:
 
 ```bash
 # Clone the repository
-git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
+git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
 cd d6e-docker-stf-skills
 
 # Open in Cursor or load in Claude Code
@@ -237,15 +237,20 @@ Check for:
 
 ### 3. Error Handling
 
-Ensure errors are caught and reported:
+Ensure failures follow the d6e error contract — write the reason to
+**stderr** and exit non-zero (stdout stays empty; d6e surfaces the
+stderr text as the step's failure message):
 
 ```python
 try:
     result = execute_sql(...)
 except Exception as e:
-    logging.error(f"SQL failed: {str(e)}")
-    return {"error": "Database operation failed", "details": str(e)}
+    logging.error(f"SQL failed: {str(e)}")  # logging goes to stderr
+    sys.exit(1)
 ```
+
+Only recoverable, domain-level results (e.g. "0 rows matched") belong
+inside the normal `{"output": {...}}` document with a status field.
 
 ### 4. Logging
 
@@ -467,9 +472,9 @@ Create a D6E Docker STF that processes data in batches of
 
 ### External Resources
 
-- [D6E Docker STF Skills Repository](https://github.com/d6e-ai/d6e-docker-stf-skills) - This repository
-- [D6E Documentation](https://github.com/d6e-ai/d6e) - D6E platform documentation
-- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Real Docker STF sample
+- [D6E Docker STF Skills Repository](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills) - This repository
+- [D6E Documentation](https://gitlab.com/cauchye/d6e-ai/d6e) - D6E platform documentation
+- [examples/echo-stf](../examples/echo-stf/) - Real Docker STF sample in this repository
 - [Claude Agent Skills Guide](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Official Agent Skills guide
 - [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/) - Docker best practices
 
@@ -487,4 +492,4 @@ Create a D6E Docker STF that processes data in batches of
 
 **Happy Docker STF Building! 🎉**
 
-Have questions? Open an issue on the [D6E Docker STF Skills repository](https://github.com/d6e-ai/d6e-docker-stf-skills/issues).
+Have questions? Open an issue on the [D6E Docker STF Skills repository](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills/-/issues).

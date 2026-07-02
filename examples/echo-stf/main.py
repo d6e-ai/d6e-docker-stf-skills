@@ -142,31 +142,19 @@ def main():
         print(json.dumps(output))
         logging.info("Processing completed successfully")
         
+    # Error contract: write the reason to stderr and exit non-zero.
+    # d6e reports the step as failed with the container's stderr as the
+    # error message. Nothing must be printed to stdout on failure.
     except json.JSONDecodeError as e:
-        error_msg = f"Invalid JSON input: {str(e)}"
-        logging.error(error_msg)
-        print(json.dumps({
-            "error": error_msg,
-            "type": "JSONDecodeError"
-        }))
+        logging.error(f"JSONDecodeError: invalid JSON input: {str(e)}")
         sys.exit(1)
         
     except ValueError as e:
-        error_msg = str(e)
-        logging.error(error_msg)
-        print(json.dumps({
-            "error": error_msg,
-            "type": "ValueError"
-        }))
+        logging.error(f"ValueError: {str(e)}")
         sys.exit(1)
         
     except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        logging.error(error_msg, exc_info=True)
-        print(json.dumps({
-            "error": error_msg,
-            "type": type(e).__name__
-        }))
+        logging.error(f"{type(e).__name__}: unexpected error: {str(e)}", exc_info=True)
         sys.exit(1)
 
 if __name__ == "__main__":

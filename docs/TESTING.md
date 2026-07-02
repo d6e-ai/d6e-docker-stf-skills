@@ -94,8 +94,11 @@ else
 fi
 
 # Test 2: Error handling
+# d6e's error contract: non-zero exit code + message on stderr.
+# So an invalid operation must make the container exit non-zero.
 log_info "Test 2: Error Handling"
-OUTPUT=$(echo '{
+set +e
+STDERR=$(echo '{
   "workspace_id": "01234567-89ab-cdef-0123-456789abcdef",
   "stf_id": "01234567-89ab-cdef-0123-456789abcdef",
   "caller": null,
@@ -105,14 +108,15 @@ OUTPUT=$(echo '{
     "operation": "unknown_operation"
   },
   "sources": {}
-}' | docker run --rm -i ${IMAGE_NAME}:${IMAGE_TAG})
+}' | docker run --rm -i ${IMAGE_NAME}:${IMAGE_TAG} 2>&1 >/dev/null)
+EXIT_CODE=$?
+set -e
 
-if echo "$OUTPUT" | jq -e '.error' > /dev/null || \
-   echo "$OUTPUT" | jq -e '.output.status == "error"' > /dev/null; then
-  log_info "✅ Test 2 passed (error handled correctly)"
+if [ "$EXIT_CODE" -ne 0 ] && [ -n "$STDERR" ]; then
+  log_info "✅ Test 2 passed (non-zero exit + stderr message)"
 else
-  log_error "❌ Test 2 failed (error not handled)"
-  echo "Output: $OUTPUT"
+  log_error "❌ Test 2 failed (expected non-zero exit with stderr message)"
+  echo "Exit code: $EXIT_CODE / Stderr: $STDERR"
   exit 1
 fi
 
@@ -381,8 +385,13 @@ import pytest
 
 IMAGE_NAME = "my-stf:latest"
 
-def run_stf(input_data):
-    """Run STF in Docker container and return output"""
+def run_stf(input_data, expect_success=True):
+    """Run STF in Docker container.
+
+    Returns the parsed stdout JSON on success.
+    With expect_success=False, returns (exit_code, stderr) so tests can
+    assert on d6e's error contract (non-zero exit + stderr message).
+    """
     input_json = json.dumps(input_data)
 
     result = subprocess.run(
@@ -393,6 +402,9 @@ def run_stf(input_data):
         capture_output=True,
         timeout=30
     )
+
+    if not expect_success:
+        return result.returncode, result.stderr.decode()
 
     if result.returncode != 0:
         stderr = result.stderr.decode()
@@ -444,7 +456,7 @@ def test_sql_select(mock_api_server):
     assert len(output["output"]["rows"]) > 0
 
 def test_error_handling():
-    """Test error handling"""
+    """Invalid operations must exit non-zero with a message on stderr"""
     input_data = {
         "workspace_id": "test",
         "stf_id": "test",
@@ -457,10 +469,10 @@ def test_error_handling():
         "sources": {}
     }
 
-    output = run_stf(input_data)
+    exit_code, stderr = run_stf(input_data, expect_success=False)
 
-    assert "error" in output or \
-           (output.get("output", {}).get("status") == "error")
+    assert exit_code != 0
+    assert stderr.strip() != ""
 
 @pytest.fixture(scope="session")
 def mock_api_server():
@@ -506,6 +518,16 @@ Testing with real D6E environment.
 ```bash
 #!/bin/bash
 # End-to-End test with real D6E environment
+#
+# Notes on the API shape:
+# - Resource endpoints are NOT nested under /workspaces/{id}/ - the
+#   workspace is selected with the X-Workspace-ID header.
+# - POST /api/v1/stfs creates the STF AND its first version in one call.
+#   The "code" field must be base64 of the Docker config JSON.
+# - Workflow stf_steps reference stf_version_id (not stf_id + version).
+# - POST /api/v1/workflows/{id}/execute is synchronous: the body is the
+#   workflow input itself (no {"input": ...} wrapper) and the response
+#   is the final result.
 
 set -e
 
@@ -522,89 +544,92 @@ fi
 
 echo "🚀 Starting E2E test..."
 
-# 1. Create STF
+# 1. Create STF (creates the first version too)
 echo "Creating STF..."
-STF_RESPONSE=$(curl -s -X POST "$D6E_API_URL/api/v1/workspaces/$WORKSPACE_ID/stfs" \
-  -H "Authorization: Bearer $D6E_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "test-stf-e2e",
-    "description": "E2E Test STF"
-  }')
+DOCKER_CONFIG_B64=$(echo -n "{\"image\":\"$IMAGE_NAME\"}" | base64 | tr -d '\n')
 
-STF_ID=$(echo "$STF_RESPONSE" | jq -r '.id')
-echo "STF created: $STF_ID"
-
-# 2. Create STF version
-echo "Creating STF version..."
-VERSION_RESPONSE=$(curl -s -X POST "$D6E_API_URL/api/v1/workspaces/$WORKSPACE_ID/stfs/$STF_ID/versions" \
+STF_RESPONSE=$(curl -s -X POST "$D6E_API_URL/api/v1/stfs" \
   -H "Authorization: Bearer $D6E_TOKEN" \
+  -H "X-Workspace-ID: $WORKSPACE_ID" \
   -H "Content-Type: application/json" \
   -d "{
+    \"name\": \"test-stf-e2e\",
+    \"description\": \"E2E Test STF\",
     \"version\": \"1.0.0\",
     \"runtime\": \"docker\",
-    \"code\": \"{\\\"image\\\":\\\"$IMAGE_NAME\\\"}\"
+    \"code\": \"$DOCKER_CONFIG_B64\"
   }")
 
-echo "STF version created"
+STF_ID=$(echo "$STF_RESPONSE" | jq -r '.id')
+STF_VERSION_ID=$(echo "$STF_RESPONSE" | jq -r '.version_id')
+echo "STF created: $STF_ID (version: $STF_VERSION_ID)"
 
-# 3. Create workflow
-echo "Creating workflow..."
-WORKFLOW_RESPONSE=$(curl -s -X POST "$D6E_API_URL/api/v1/workspaces/$WORKSPACE_ID/workflows" \
+# 2. Smoke-test without a workflow (describe + instant run)
+echo "Running describe..."
+curl -s -X POST "$D6E_API_URL/api/v1/stfs/$STF_ID/describe" \
   -H "Authorization: Bearer $D6E_TOKEN" \
+  -H "X-Workspace-ID: $WORKSPACE_ID" | jq .
+
+echo "Running instant-run..."
+INSTANT_RESPONSE=$(curl -s -X POST "$D6E_API_URL/api/v1/stfs/instant-run" \
+  -H "Authorization: Bearer $D6E_TOKEN" \
+  -H "X-Workspace-ID: $WORKSPACE_ID" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"stf_id\": \"$STF_ID\",
+    \"input\": { \"operation\": \"test\", \"message\": \"E2E Test\" },
+    \"sources\": {}
+  }")
+
+if [ "$(echo "$INSTANT_RESPONSE" | jq -r '.success')" != "true" ]; then
+  echo "❌ Instant run failed:"
+  echo "$INSTANT_RESPONSE" | jq '.error'
+  exit 1
+fi
+echo "Instant run OK"
+
+# 3. Create workflow (steps reference stf_version_id)
+echo "Creating workflow..."
+WORKFLOW_RESPONSE=$(curl -s -X POST "$D6E_API_URL/api/v1/workflows" \
+  -H "Authorization: Bearer $D6E_TOKEN" \
+  -H "X-Workspace-ID: $WORKSPACE_ID" \
   -H "Content-Type: application/json" \
   -d "{
     \"name\": \"test-workflow-e2e\",
+    \"input_steps\": [],
     \"stf_steps\": [{
-      \"stf_id\": \"$STF_ID\",
-      \"version\": \"1.0.0\"
-    }]
+      \"stf_version_id\": \"$STF_VERSION_ID\",
+      \"input_mappings\": [
+        { \"source\": { \"type\": \"Variable\", \"value\": \"\$input.operation\" }, \"target\": \"operation\" },
+        { \"source\": { \"type\": \"Variable\", \"value\": \"\$input.message\" }, \"target\": \"message\" }
+      ]
+    }],
+    \"effect_steps\": []
   }")
 
 WORKFLOW_ID=$(echo "$WORKFLOW_RESPONSE" | jq -r '.id')
 echo "Workflow created: $WORKFLOW_ID"
 
-# 4. Execute workflow
+# 4. Execute workflow (synchronous - body IS the input)
 echo "Executing workflow..."
-EXECUTION_RESPONSE=$(curl -s -X POST "$D6E_API_URL/api/v1/workspaces/$WORKSPACE_ID/workflows/$WORKFLOW_ID/execute" \
+RESULT=$(curl -s -X POST "$D6E_API_URL/api/v1/workflows/$WORKFLOW_ID/execute" \
   -H "Authorization: Bearer $D6E_TOKEN" \
+  -H "X-Workspace-ID: $WORKSPACE_ID" \
   -H "Content-Type: application/json" \
   -d '{
-    "input": {
-      "operation": "test",
-      "message": "E2E Test"
-    }
+    "operation": "test",
+    "message": "E2E Test"
   }')
 
-EXECUTION_ID=$(echo "$EXECUTION_RESPONSE" | jq -r '.id')
-echo "Execution started: $EXECUTION_ID"
+echo "Result:"
+echo "$RESULT" | jq .
 
-# 5. Wait for execution to complete
-echo "Waiting for execution to complete..."
-for i in {1..30}; do
-  sleep 2
+if echo "$RESULT" | jq -e '.error' > /dev/null; then
+  echo "❌ Execution failed"
+  exit 1
+fi
 
-  STATUS_RESPONSE=$(curl -s "$D6E_API_URL/api/v1/workspaces/$WORKSPACE_ID/workflow-executions/$EXECUTION_ID" \
-    -H "Authorization: Bearer $D6E_TOKEN")
-
-  STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
-
-  if [ "$STATUS" == "completed" ]; then
-    echo "✅ Execution completed successfully"
-    echo "Output:"
-    echo "$STATUS_RESPONSE" | jq '.output'
-    exit 0
-  elif [ "$STATUS" == "failed" ]; then
-    echo "❌ Execution failed"
-    echo "$STATUS_RESPONSE" | jq '.error'
-    exit 1
-  fi
-
-  echo "  Status: $STATUS (attempt $i/30)"
-done
-
-echo "❌ Execution timeout"
-exit 1
+echo "✅ E2E test completed"
 ```
 
 Usage:
@@ -617,6 +642,25 @@ export IMAGE_NAME="ghcr.io/user/my-stf:latest"
 chmod +x tests/e2e/test-e2e.sh
 ./tests/e2e/test-e2e.sh
 ```
+
+How to obtain the two credentials:
+
+- `WORKSPACE_ID` — copy it from any workspace URL in the d6e console
+  (`/workspaces/{uuid}/...`), or from the settings page's Integration
+  section (admin view has a copy button).
+- `D6E_TOKEN` — one of:
+  1. **JWT (quick, expires in ~1 hour)**: log in to the d6e console,
+     open dev tools → Cookies, and copy the `auth-token` value.
+  2. **JWT via refresh (scriptable)**: copy the `auth-refresh` cookie
+     instead and exchange it whenever needed:
+     `curl -X POST $D6E_API_URL/api/v1/auth/token -H 'Content-Type: application/json' -d '{"grant_type":"refresh_token","refresh_token":"<value>"}'`
+     — the response's `access_token` is your Bearer. Note the refresh
+     token rotates on every use; store the new one.
+  3. **API key (long-lived)**: with a JWT from option 1, call
+     `POST /api/v1/api-keys` with `{"name": "e2e-test"}`. The response's
+     `key` (a `d6e_...` string) works as a Bearer token until deleted
+     and never needs refreshing. There is currently no console UI for
+     API keys, so this one API call is how you mint them.
 
 ---
 
