@@ -676,23 +676,31 @@ docker run --rm -i my-stf:latest < input.json 2>&1 | tee output.log
 Everything below needs a **workspace id** and a **Bearer token** for the
 d6e REST API (or an AI-agent session inside d6e, where the MCP tools
 handle auth for you). Any workspace member can obtain both — no
-d6e-auth admin involvement:
+platform-admin involvement:
 
 - **Workspace ID**: the UUID in every d6e console URL
   (`{D6E_BASE_URL}/{locale}/workspaces/{uuid}/...`); the workspace
   settings page's Integration section also shows it with a copy button
   (admin view).
-- **Bearer token**: copy the `auth-token` cookie from a logged-in d6e
-  console session (~1 h lifetime), or mint a long-lived API key with it
-  (`POST /api/v1/api-keys` `{"name":"dev"}` → returns a `d6e_...` key
-  that works as the Bearer value). For scripts, the `auth-refresh`
-  cookie can be exchanged at `POST /api/v1/auth/token`
-  (`{"grant_type":"refresh_token","refresh_token":"..."}`) — it rotates
-  on each use.
+- **Bearer token**: create an API key in the console — avatar in the
+  header → **API Keys** (`/{locale}/user/api-keys`; also linked from
+  the workspace settings page's Integration section). The long-lived
+  `d6e_...` key is shown once and works as the Bearer value on every
+  endpoint below.
 
 Send the workspace as an `X-Workspace-ID: {workspace_id}` header on
 every request; STF endpoints are **not** nested under
 `/workspaces/{id}/` in the URL.
+
+**Working from a local AI agent (Codex / Claude Code / Cursor)?**
+Instead of raw curl, connect the agent to the instance's MCP server —
+HTTP mode on port 8081, path `/mcp`, `Authorization: Bearer d6e_...`
+header — and all the `d6e_*` tools used below (`d6e_create_stf`,
+`d6e_describe_stf`, `d6e_instant_run_stf`, `d6e_create_workflow`, ...)
+become directly callable. Per-agent setup and the full
+local-development workflow are documented in
+[local-ai-development.md](https://gitlab.com/cauchye/d6e-ai/d6e-plugin-skills/-/blob/main/docs/local-ai-development.md)
+([日本語版](https://gitlab.com/cauchye/d6e-ai/d6e-plugin-skills/-/blob/main/docs/local-ai-development.ja.md)).
 
 ### Docker config JSON (the STF `code` field)
 
