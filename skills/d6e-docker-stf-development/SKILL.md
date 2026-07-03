@@ -741,10 +741,10 @@ removes one. At runtime d6e decrypts the stored value and injects it as
 the environment variable; a key listed in `secret_keys` without a
 stored value fails the execution with a clear error.
 
-If the STF is installed as part of a d6e App (`template.yaml`), the
+If the STF is installed as part of a d6e Plugin (`template.yaml`), the
 install dialog in the d6e console asks the installing admin for these
 values and stores them as secrets automatically — see the
-`d6e-app-development` skill.
+`d6e-plugin-development` skill.
 
 ### Creating the STF
 
