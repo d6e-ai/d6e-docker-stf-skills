@@ -676,7 +676,7 @@ docker run --rm -i my-stf:latest < input.json 2>&1 | tee output.log
 Everything below needs a **workspace id** and a **Bearer token** for the
 d6e REST API (or an AI-agent session inside d6e, where the MCP tools
 handle auth for you). Any workspace member can obtain both — no
-d6e-auth admin involvement:
+platform-admin involvement:
 
 - **Workspace ID**: the UUID in every d6e console URL
   (`{D6E_BASE_URL}/{locale}/workspaces/{uuid}/...`); the workspace
