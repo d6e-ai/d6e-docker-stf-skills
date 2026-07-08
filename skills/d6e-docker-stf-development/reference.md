@@ -143,6 +143,30 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def sql_quote(value: Any) -> str:
+    """Quote a value as a SQL string literal (doubles single quotes).
+
+    The d6e SQL API has no bind parameters, so escaping string
+    literals is the only defense against SQL injection.
+    """
+    escaped = str(value).replace("'", "''")
+    return f"'{escaped}'"
+
+
+def validate_table_name(table_name: str) -> str:
+    """Validate a table name (identifier, d6e limit of 23 chars)."""
+    if not table_name.isidentifier() or len(table_name) > 23:
+        raise ValidationError(f"Invalid table name: {table_name}")
+    return table_name
+
+
+def validate_column_name(column_name: str) -> str:
+    """Validate a column name (must be a plain identifier)."""
+    if not column_name.isidentifier():
+        raise ValidationError(f"Invalid column name: {column_name}")
+    return column_name
+
+
 class STFContext:
     """Context for STF execution"""
     def __init__(self, workspace_id: str, stf_id: str, api_url: str, api_token: str):
@@ -227,6 +251,7 @@ def process(
         table_name = user_input.get("table_name")
         if not table_name:
             raise ValidationError("Missing required field: table_name")
+        validate_table_name(table_name)
         
         result = api_client.execute_sql(
             f"SELECT * FROM {table_name} LIMIT 100"
@@ -244,12 +269,13 @@ def process(
         
         if not table_name or not data:
             raise ValidationError("Missing required fields: table_name, data")
+        validate_table_name(table_name)
         
         inserted = 0
         for item in data:
-            # Build INSERT statement (simplified - use proper escaping in production)
-            columns = ", ".join(item.keys())
-            values = ", ".join([f"'{v}'" for v in item.values()])
+            # Validate column names and escape values before building SQL
+            columns = ", ".join(validate_column_name(k) for k in item.keys())
+            values = ", ".join(sql_quote(v) for v in item.values())
             sql = f"INSERT INTO {table_name} ({columns}) VALUES ({values})"
             api_client.execute_sql(sql)
             inserted += 1
@@ -271,7 +297,8 @@ def main():
         
         # Read input
         input_data = json.load(sys.stdin)
-        logger.debug(f"Input: {json.dumps(input_data, indent=2)}")
+        # Never log the full stdin document - it contains api_token
+        logger.info(f"Processing operation={input_data['input'].get('operation')}")
         
         # Create context
         context = STFContext(
@@ -421,6 +448,15 @@ class ValidationError extends Error {
   }
 }
 
+// The d6e SQL API has no bind parameters — identifiers must be
+// validated and string literals escaped before building SQL.
+function assertSafeIdentifier(name: string, maxLength = 63): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || name.length > maxLength) {
+    throw new ValidationError(`Invalid identifier: ${name}`);
+  }
+  return name;
+}
+
 function validateInput(userInput: Record<string, any>): void {
   if (!userInput.operation) {
     throw new ValidationError('Missing required field: operation');
@@ -444,6 +480,8 @@ async function process(
     if (!table_name) {
       throw new ValidationError('Missing required field: table_name');
     }
+    // d6e table names are limited to 23 characters
+    assertSafeIdentifier(table_name, 23);
 
     const result = await apiClient.executeSql(
       `SELECT * FROM ${table_name} LIMIT 100`
@@ -475,7 +513,8 @@ async function main() {
     // Read input
     const inputStr = await readStdin();
     const input: STFInput = JSON.parse(inputStr);
-    console.error(`[DEBUG] Input: ${JSON.stringify(input, null, 2)}`);
+    // Never log the full stdin document - it contains api_token
+    console.error(`[INFO] Processing operation=${input.input.operation}`);
 
     // Create context
     const context: STFContext = {
@@ -593,7 +632,21 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 )
+
+// The d6e SQL API has no bind parameters — identifiers interpolated
+// into SQL must be validated first (d6e table names are <= 23 chars).
+var identifierRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+func validateTableName(name string) error {
+	if !identifierRe.MatchString(name) || len(name) > 23 {
+		return &ValidationError{
+			Message: fmt.Sprintf("Invalid table name: %s", name),
+		}
+	}
+	return nil
+}
 
 type STFInput struct {
 	WorkspaceID string                 `json:"workspace_id"`
@@ -712,6 +765,9 @@ func process(userInput map[string]interface{}, sources map[string]interface{},
 			return nil, &ValidationError{
 				Message: "Missing required field: table_name",
 			}
+		}
+		if err := validateTableName(tableName); err != nil {
+			return nil, err
 		}
 
 		sql := fmt.Sprintf("SELECT * FROM %s LIMIT 100", tableName)
@@ -910,12 +966,17 @@ await d6e_create_policy({
 
 ```python
 def get_tenant_data(api_client, user_id, table_name):
-    """Fetch data filtered by tenant"""
+    """Fetch data filtered by tenant.
+
+    Uses the sql_quote / validate_table_name helpers defined in the
+    Python implementation above — the SQL API has no bind parameters.
+    """
+    validate_table_name(table_name)
     # Use caller ID for tenant isolation
     sql = f"""
         SELECT * FROM {table_name} 
         WHERE tenant_id = (
-            SELECT tenant_id FROM users WHERE id = '{user_id}'
+            SELECT tenant_id FROM users WHERE id = {sql_quote(user_id)}
         )
     """
     return api_client.execute_sql(sql)
@@ -949,7 +1010,8 @@ def process_batch(api_client, items, batch_size=100):
 ```python
 def process_with_cache(user_input, sources, api_client):
     """Use previous step output as cache"""
-    cache_key = f"data_{user_input['table_name']}"
+    table_name = validate_table_name(user_input["table_name"])
+    cache_key = f"data_{table_name}"
     
     # Check if data exists in sources (cache)
     if cache_key in sources:
@@ -959,7 +1021,7 @@ def process_with_cache(user_input, sources, api_client):
     # Fetch fresh data
     logger.info("Fetching fresh data")
     result = api_client.execute_sql(
-        f"SELECT * FROM {user_input['table_name']}"
+        f"SELECT * FROM {table_name}"
     )
     
     return {"rows": result["rows"]}

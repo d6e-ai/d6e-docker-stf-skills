@@ -148,6 +148,15 @@ Fetches data from external API and stores in D6E database.
 import requests
 from datetime import datetime
 
+def sql_quote(value):
+    """Quote a value as a SQL string literal (doubles single quotes).
+
+    The d6e SQL API has no bind parameters, so escaping is the only
+    defense against injection. Reused by all SQL examples below.
+    """
+    escaped = str(value).replace("'", "''")
+    return f"'{escaped}'"
+
 def fetch_weather_data(location, api_key):
     """Fetch weather from external API"""
     url = "https://api.weatherapi.com/v1/current.json"
@@ -187,12 +196,12 @@ def process(user_input, sources, api_client):
             wind_speed,
             recorded_at
         ) VALUES (
-            '{location_data.get("name")}',
+            {sql_quote(location_data.get("name"))},
             {current.get("temp_c")},
             {current.get("humidity")},
-            '{current.get("condition", {}).get("text")}',
+            {sql_quote(current.get("condition", {}).get("text"))},
             {current.get("wind_kph")},
-            '{datetime.utcnow().isoformat()}'
+            {sql_quote(datetime.utcnow().isoformat())}
         )
     """
     
@@ -242,6 +251,7 @@ Aggregates data from multiple tables and generates a report.
 
 **Implementation:**
 ```python
+# Uses sql_quote() defined in Example 2
 def generate_sales_report(api_client, month):
     """Generate comprehensive sales report"""
     # Get total sales
@@ -251,7 +261,7 @@ def generate_sales_report(api_client, month):
             SUM(total_amount) as total_revenue,
             AVG(total_amount) as avg_order_value
         FROM orders
-        WHERE DATE_TRUNC('month', created_at) = '{month}-01'
+        WHERE DATE_TRUNC('month', created_at) = {sql_quote(f"{month}-01")}
     """
     totals = api_client.execute_sql(total_sql)
     
@@ -264,7 +274,7 @@ def generate_sales_report(api_client, month):
         FROM order_items oi
         JOIN products p ON oi.product_id = p.id
         JOIN orders o ON oi.order_id = o.id
-        WHERE DATE_TRUNC('month', o.created_at) = '{month}-01'
+        WHERE DATE_TRUNC('month', o.created_at) = {sql_quote(f"{month}-01")}
         GROUP BY p.category
         ORDER BY revenue DESC
     """
@@ -285,7 +295,7 @@ def generate_sales_report(api_client, month):
                 customer_id,
                 SUM(total_amount) as total_spent
             FROM orders
-            WHERE DATE_TRUNC('month', created_at) = '{month}-01'
+            WHERE DATE_TRUNC('month', created_at) = {sql_quote(f"{month}-01")}
             GROUP BY customer_id
         ) customer_totals
         GROUP BY segment
@@ -302,7 +312,7 @@ def generate_sales_report(api_client, month):
             SUM(o.total_amount) as total_spent
         FROM customers c
         JOIN orders o ON c.id = o.customer_id
-        WHERE DATE_TRUNC('month', o.created_at) = '{month}-01'
+        WHERE DATE_TRUNC('month', o.created_at) = {sql_quote(f"{month}-01")}
         GROUP BY c.id, c.name, c.email
         ORDER BY total_spent DESC
         LIMIT 10
@@ -375,6 +385,7 @@ Processes large datasets in batches with progress tracking.
 
 **Implementation:**
 ```python
+# Uses sql_quote() defined in Example 2
 def enrich_customer_batch(api_client, customers, enrichment_type):
     """Enrich a batch of customers"""
     enriched = []
@@ -385,7 +396,7 @@ def enrich_customer_batch(api_client, customers, enrichment_type):
             location_sql = f"""
                 SELECT city, state, country, timezone
                 FROM locations
-                WHERE postal_code = '{customer.get("postal_code")}'
+                WHERE postal_code = {sql_quote(customer.get("postal_code"))}
                 LIMIT 1
             """
             location_result = api_client.execute_sql(location_sql)
@@ -397,12 +408,12 @@ def enrich_customer_batch(api_client, customers, enrichment_type):
                 update_sql = f"""
                     UPDATE customers
                     SET 
-                        city = '{location["city"]}',
-                        state = '{location["state"]}',
-                        country = '{location["country"]}',
-                        timezone = '{location["timezone"]}',
+                        city = {sql_quote(location["city"])},
+                        state = {sql_quote(location["state"])},
+                        country = {sql_quote(location["country"])},
+                        timezone = {sql_quote(location["timezone"])},
                         updated_at = NOW()
-                    WHERE id = '{customer["id"]}'
+                    WHERE id = {sql_quote(customer["id"])}
                 """
                 api_client.execute_sql(update_sql)
                 enriched.append(customer["id"])
@@ -588,6 +599,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
+# Uses sql_quote() defined in Example 2
 def generate_daily_summary(api_client, date):
     """Generate daily sales summary"""
     sql = f"""
@@ -598,7 +610,7 @@ def generate_daily_summary(api_client, date):
             AVG(total_amount) as avg_order_value,
             MAX(total_amount) as highest_order
         FROM orders
-        WHERE DATE(created_at) = '{date}'
+        WHERE DATE(created_at) = {sql_quote(date)}
     """
     result = api_client.execute_sql(sql)
     return result["rows"][0]
@@ -682,6 +694,7 @@ Syncs data from external system to D6E database.
 
 **Implementation:**
 ```python
+# Uses sql_quote() defined in Example 2
 def fetch_inventory_updates(warehouse_url, api_key, since_timestamp):
     """Fetch inventory updates since last sync"""
     response = requests.get(
@@ -696,7 +709,7 @@ def fetch_inventory_updates(warehouse_url, api_key, since_timestamp):
 def sync_inventory_item(api_client, item):
     """Sync single inventory item"""
     # Check if product exists
-    check_sql = f"SELECT id FROM products WHERE sku = '{item['sku']}'"
+    check_sql = f"SELECT id FROM products WHERE sku = {sql_quote(item['sku'])}"
     result = api_client.execute_sql(check_sql)
     
     if result["rows"]:
@@ -704,9 +717,9 @@ def sync_inventory_item(api_client, item):
         update_sql = f"""
             UPDATE products
             SET 
-                stock_quantity = {item['quantity']},
+                stock_quantity = {int(item['quantity'])},
                 last_sync_at = NOW()
-            WHERE sku = '{item['sku']}'
+            WHERE sku = {sql_quote(item['sku'])}
         """
         api_client.execute_sql(update_sql)
         return "updated"
@@ -714,7 +727,7 @@ def sync_inventory_item(api_client, item):
         # Insert new
         insert_sql = f"""
             INSERT INTO products (sku, name, stock_quantity, last_sync_at)
-            VALUES ('{item['sku']}', '{item['name']}', {item['quantity']}, NOW())
+            VALUES ({sql_quote(item['sku'])}, {sql_quote(item['name'])}, {int(item['quantity'])}, NOW())
         """
         api_client.execute_sql(insert_sql)
         return "inserted"
