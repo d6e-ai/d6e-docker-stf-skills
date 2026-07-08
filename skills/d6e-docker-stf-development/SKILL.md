@@ -351,9 +351,13 @@ When creating a Docker STF, ensure:
 
 ### Security
 
-- Never log sensitive data (tokens, passwords)
+- Never log sensitive data (tokens, passwords) — in particular, never
+  log `api_token` or the full stdin JSON, which contains it
 - Validate all user inputs
-- Use parameterized SQL queries
+- The SQL API accepts a raw SQL string only — there is no parameter
+  binding. Escape string literals by doubling single quotes and
+  validate identifiers (table/column names) against strict patterns or
+  allow-lists; never interpolate unescaped user input into SQL
 - Keep dependencies up-to-date
 
 ### Performance
@@ -368,7 +372,9 @@ When creating a Docker STF, ensure:
 d6e decides success/failure from the **exit code** and reports the
 container's **stderr** as the failure reason. So: successful runs print
 the `{"output": ...}` JSON to stdout and exit 0; failed runs write a
-descriptive message to stderr and exit non-zero.
+descriptive message to stderr and exit non-zero. Include the error
+type and a precise reason in stderr, but never full payloads, which may
+contain personal data or secrets.
 
 ```python
 try:
@@ -376,8 +382,10 @@ try:
     result = process_data(input_data)
     print(json.dumps({"output": result}))
 except ValueError as e:
-    # Validation errors — the stderr text is what users will see
-    logging.error(f"ValidationError: {str(e)} (input={user_input})")
+    # Validation errors — the stderr text is what users will see.
+    # Log only selected safe fields, never the whole user_input.
+    logging.error(f"ValidationError: {str(e)} (operation={user_input.get('operation')})")
+    print(json.dumps({"error": str(e), "type": "ValidationError"}))
     sys.exit(1)
 except Exception as e:
     # Unexpected errors
@@ -391,6 +399,12 @@ from (e.g. "no matching rows") are not errors — return them inside
 
 ### Logging
 
+The stdin document contains `api_token`. Never log the full stdin JSON
+(`input_data`) or the raw `input` payload — stderr from failed runs is
+surfaced in API error responses and written to the server logs, so
+anything you log can leak to users and log storage. Log only selected,
+non-secret metadata:
+
 ```python
 import logging
 
@@ -402,7 +416,8 @@ logging.basicConfig(
 )
 
 logging.info("Processing started")
-logging.debug(f"Input: {input_data}")  # Detailed logs
+# Log only non-secret metadata — never the full stdin JSON (it contains api_token)
+logging.info(f"Processing operation={user_input.get('operation')}")
 logging.warning("Deprecated operation used")
 logging.error("Failed to process", exc_info=True)
 ```
@@ -566,15 +581,28 @@ except ValueError as e:
 ### Database Query Pattern
 
 ```python
+def sql_quote(value):
+    """Quote a value as a SQL string literal (doubles single quotes).
+
+    The d6e SQL API has no bind parameters, so escaping is the only
+    defense against injection.
+    """
+    escaped = str(value).replace("'", "''")
+    return f"'{escaped}'"
+
 def safe_query(api_context, table_name, filters):
-    """Execute a safe parameterized query"""
+    """Query a table with identifier validation and escaped literals."""
+    # Validate the table name (d6e table names are <= 23 chars)
+    if not table_name.isidentifier() or len(table_name) > 23:
+        raise ValueError(f"Invalid table name: {table_name}")
+
     # Build WHERE clause safely
     where_conditions = []
     for key, value in filters.items():
-        # Simple validation
+        # Column names must be identifiers — reject anything else
         if not key.isidentifier():
             raise ValueError(f"Invalid column name: {key}")
-        where_conditions.append(f"{key} = '{value}'")
+        where_conditions.append(f"{key} = {sql_quote(value)}")
 
     where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
     sql = f"SELECT * FROM {table_name} WHERE {where_clause} LIMIT 100"
