@@ -1,7 +1,6 @@
 # D6E Docker STF Skills
 
-[![Skills](https://img.shields.io/badge/skills.sh-d6e--docker--stf--skills-blue)](https://skills.sh)
-[![GitLab](https://img.shields.io/badge/GitLab-d6e--ai%2Fd6e--docker--stf--skills-FC6D26?logo=gitlab)](https://gitlab.com/d6e-ai/d6e-docker-stf-skills)
+[![GitLab](https://img.shields.io/badge/GitLab-cauchye%2Fd6e--ai%2Fd6e--docker--stf--skills-FC6D26?logo=gitlab)](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Claude/Cursor Agent Skills for developing custom D6E Docker STFs.
@@ -29,6 +28,7 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 - SQL API integration
 - Multi-language implementations (Python, Node.js, Go)
 - Best practices and security guidelines
+- The `describe` operation for self-documenting STFs
 - Common patterns and examples
 - Troubleshooting guide
 
@@ -36,15 +36,15 @@ Teaches Claude/Cursor how to help developers create custom Docker-based STFs for
 
 ### Quick Install (Recommended)
 
-Install this skill using the skills CLI:
+Install this skill using the skills.sh CLI (the repository lives on
+GitLab, so pass the full URL — the GitHub-style `owner/repo` shorthand
+expands to github.com and will not work):
 
 ```bash
-npx skills add https://gitlab.com/d6e-ai/d6e-docker-stf-skills
+npx skills add https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills --skill d6e-docker-stf-development
 ```
 
 This will automatically set up the skill in your Cursor environment.
-
-> This repository is hosted on GitLab, so the full URL is required — the GitHub-style `owner/repo` shorthand does not work.
 
 ### Manual Installation
 
@@ -52,7 +52,7 @@ This will automatically set up the skill in your Cursor environment.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 2. **Add to Cursor:**
@@ -69,7 +69,7 @@ This will automatically set up the skill in your Cursor environment.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 2. **Reference the skill:**
@@ -87,7 +87,7 @@ This will automatically set up the skill in your Cursor environment.
 1. **Open this repository in Cursor**
 
    ```bash
-   git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
+   git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
    cd d6e-docker-stf-skills
    cursor .
    ```
@@ -145,14 +145,17 @@ When a user requests help with D6E Docker STFs:
 1. Read the relevant skill document (`skills/d6e-docker-stf-development/SKILL.md`)
 2. Apply the patterns and guidelines
 3. Generate code that follows D6E conventions
-4. Include necessary files (Dockerfile, requirements.txt, etc.)
-5. Provide testing and deployment instructions
-6. Reference the appropriate documentation for more details
+4. **Always include the `describe` operation** in every generated STF
+5. Include necessary files (Dockerfile, requirements.txt, etc.)
+6. Provide testing and deployment instructions
+7. When creating workflows, **run `describe` first** to discover input schema
+8. Reference the appropriate documentation for more details
 
 ## 📖 What You'll Learn
 
 - **D6E Architecture**: How Docker STFs fit into D6E workflows
 - **Input/Output Formats**: Standard JSON schemas for communication
+- **The `describe` Operation**: Self-documenting STFs that expose their input schema and available operations
 - **SQL API**: Secure database access from Docker containers
 - **Multi-Language Support**: Python, Node.js, and Go examples
 - **Security**: Policy-based access control and best practices
@@ -212,13 +215,25 @@ Requirements:
 
 For more prompt examples, see **[AI Prompts](./docs/AI-PROMPTS.md)**.
 
+### The `describe` Operation
+
+Every Docker STF implements a `describe` operation that returns its input schema and available operations. This enables workflow builders and AI agents to discover capabilities before creating workflows.
+
+```bash
+# Discover what an STF supports
+echo '{"workspace_id":"test","stf_id":"test","caller":null,"api_url":"http://localhost:8080","api_token":"test","input":{"operation":"describe"},"sources":{}}' \
+  | docker run --rm -i echo-stf:latest
+```
+
+This returns the full input schema, including all operations, required parameters, and optional parameters. See the [skill document](./skills/d6e-docker-stf-development/SKILL.md#the-describe-operation) for details.
+
 ### Real Sample Code
 
-**[examples/echo-stf](./examples/echo-stf/)** contains a working simple Docker STF example.
+**[examples/echo-stf](./examples/echo-stf/)** contains a working simple Docker STF example with the `describe` operation implemented.
 
 ```bash
 cd examples/echo-stf
-./test-local.sh  # Build & test
+./test-local.sh  # Build & test (includes describe test)
 ```
 
 ## 🔗 Related Resources
@@ -234,9 +249,9 @@ cd examples/echo-stf
 ### External Resources
 
 - [skills.sh](https://skills.sh) - The Open Agent Skills Ecosystem
-- [D6E Platform](https://github.com/d6e-ai/d6e) - D6E main repository
-- [D6E Docker Runtime Guide](https://github.com/d6e-ai/d6e/blob/main/docs/08-stf-docker-runtime.md) - Docker Runtime details
-- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Sample Docker STF
+- [D6E Platform](https://gitlab.com/cauchye/d6e-ai/d6e) - D6E main repository
+- [D6E Docker Runtime Guide](https://gitlab.com/cauchye/d6e-ai/d6e/-/blob/main/docs/08-stf-docker-runtime.md) - Docker Runtime details
+- [examples/echo-stf](./examples/echo-stf/) - Sample Docker STF in this repository
 - [Claude Agent Skills Documentation](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Agent Skills overview
 - [Model Context Protocol](https://modelcontextprotocol.io) - MCP specification
 
@@ -284,6 +299,7 @@ Traditional documentation tells developers **what** to do. Agent Skills teach AI
 
 - ✅ **Faster Development**: Claude/Cursor generates correct code instantly
 - ✅ **Fewer Errors**: Follows D6E conventions automatically
+- ✅ **Self-Documenting STFs**: The `describe` operation eliminates guesswork when building workflows
 - ✅ **Best Practices**: Security and performance baked in
 - ✅ **Up-to-date**: Easy to update as D6E evolves
 - ✅ **Accessible**: Developers don't need to memorize APIs
@@ -373,5 +389,5 @@ Reason: Lacks specificity and expected results are unclear
 
 - [Agent Skills Overview](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Agent Skills overview
 - [Creating Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/creating) - How to create Agent Skills
-- [D6E Documentation](https://github.com/d6e-ai/d6e) - D6E platform
-- [d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill) - Sample project
+- [D6E Documentation](https://gitlab.com/cauchye/d6e-ai/d6e) - D6E platform
+- [examples/echo-stf](./examples/echo-stf/) - Sample project in this repository

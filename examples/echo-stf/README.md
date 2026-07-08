@@ -9,6 +9,7 @@ This Docker STF supports the following operations:
 - **echo**: Return input message as-is
 - **uppercase**: Convert message to uppercase
 - **lowercase**: Convert message to lowercase
+- **describe**: Return the input schema and available operations (self-describing)
 
 ## File Structure
 
@@ -115,7 +116,75 @@ echo '{
 }
 ```
 
-### 4. Error Handling
+### 4. Describe Operation
+
+```bash
+echo '{
+  "workspace_id": "01234567-89ab-cdef-0123-456789abcdef",
+  "stf_id": "01234567-89ab-cdef-0123-456789abcdef",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i echo-stf:latest
+```
+
+**Expected output:**
+
+```json
+{
+  "output": {
+    "status": "success",
+    "operation": "describe",
+    "data": {
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": ["echo", "uppercase", "lowercase", "describe"],
+            "description": "The operation to perform"
+          },
+          "message": {
+            "type": "string",
+            "description": "The message to process"
+          }
+        },
+        "required": ["operation"]
+      },
+      "operations": {
+        "echo": {
+          "description": "Returns the input message as-is",
+          "required": ["message"],
+          "optional": []
+        },
+        "uppercase": {
+          "description": "Converts message to uppercase",
+          "required": ["message"],
+          "optional": []
+        },
+        "lowercase": {
+          "description": "Converts message to lowercase",
+          "required": ["message"],
+          "optional": []
+        },
+        "describe": {
+          "description": "Returns the input schema and available operations",
+          "required": [],
+          "optional": []
+        }
+      }
+    }
+  }
+}
+```
+
+The `describe` operation requires no additional parameters and returns the full input schema and operation details. This enables workflow builders to discover what parameters are needed before creating workflows.
+
+### 5. Error Handling
 
 ```bash
 echo '{
@@ -132,47 +201,61 @@ echo '{
 }' | docker run --rm -i echo-stf:latest
 ```
 
-**Expected output:**
+**Expected behavior:** the container exits with a **non-zero exit code**,
+stdout stays empty, and stderr contains the reason:
 
-```json
-{
-  "error": "Unknown operation: invalid_operation",
-  "type": "ValueError"
-}
 ```
+2025-01-01 00:00:00,000 - ERROR - ValueError: Unknown operation: invalid_operation
+```
+
+d6e treats a non-zero exit as a failed step and surfaces the stderr text
+as the error message. (Printing `{"error": ...}` to stdout does nothing —
+stdout is only parsed on success.)
 
 ## Using with D6E
 
-### 1. Create STF
+### 1. Create STF (with its first version)
+
+`d6e_create_stf` creates the STF and its first version in one call:
 
 ```javascript
 d6e_create_stf({
   name: "echo-stf",
-  description: "Simple echo Docker STF"
-});
-// → Note the stf_id
-```
-
-### 2. Create STF Version
-
-```javascript
-d6e_create_stf_version({
-  stf_id: "{stf_id}",
+  description: "Simple echo Docker STF",
   version: "1.0.0",
   runtime: "docker",
   code: '{"image":"echo-stf:latest"}'
+});
+// → Note the stf id and version id from the response
+```
+
+### 2. Verify (describe + instant run)
+
+```javascript
+d6e_describe_stf({ id: "{stf_id}" });
+
+d6e_instant_run_stf({
+  stf_id: "{stf_id}",
+  input: { operation: "echo", message: "Hello from D6E!" }
 });
 ```
 
 ### 3. Create Workflow
 
+Steps reference the **version id**, and inputs are mapped explicitly:
+
 ```javascript
 d6e_create_workflow({
   name: "echo-workflow",
+  input_steps: [],
   stf_steps: [{
-    stf_id: "{stf_id}",
-    version: "1.0.0"
-  }]
+    stf_version_id: "{stf_version_id}",
+    input_mappings: [
+      { source: { type: "Variable", value: "$input.operation" }, target: "operation" },
+      { source: { type: "Variable", value: "$input.message" }, target: "message" }
+    ]
+  }],
+  effect_steps: []
 });
 // → Note the workflow_id
 ```
@@ -182,7 +265,7 @@ d6e_create_workflow({
 ```javascript
 // Echo operation
 d6e_execute_workflow({
-  workflow_id: "{workflow_id}",
+  id: "{workflow_id}",
   input: {
     operation: "echo",
     message: "Hello from D6E!"
@@ -191,7 +274,7 @@ d6e_execute_workflow({
 
 // Uppercase operation
 d6e_execute_workflow({
-  workflow_id: "{workflow_id}",
+  id: "{workflow_id}",
   input: {
     operation: "uppercase",
     message: "hello d6e"
@@ -218,21 +301,23 @@ def main():
         # 3. Execute operation
         result = process_operation(operation, message)
         
-        # 4. Output JSON result to stdout
+        # 4. Output JSON result to stdout (success only)
         print(json.dumps({"output": result}))
         
     except Exception as e:
-        # Error handling
-        print(json.dumps({"error": str(e), "type": type(e).__name__}))
+        # Error handling: reason to stderr, non-zero exit code.
+        # d6e surfaces stderr as the step's failure message.
+        logging.error(f"{type(e).__name__}: {str(e)}")
         sys.exit(1)
 ```
 
 ### Key Points
 
 1. **Input**: Read JSON from stdin
-2. **Output**: Write JSON to stdout (`{"output": {...}}` format)
-3. **Logging**: Log to stderr (stdout is reserved for results)
-4. **Errors**: Catch exceptions appropriately and return JSON errors
+2. **Output**: Write exactly one JSON document to stdout (`{"output": {...}}`) — nothing else
+3. **Logging**: Log to stderr (stdout is reserved for the result)
+4. **Errors**: Write the reason to stderr and exit non-zero (no error JSON on stdout)
+5. **Describe**: Implement the `describe` operation to expose input schema and available operations
 
 ## Customization
 

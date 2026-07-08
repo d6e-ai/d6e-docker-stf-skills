@@ -5,9 +5,18 @@ This guide shows you how to create and deploy your first D6E Docker STF **in 5 m
 ## 📋 Prerequisites
 
 - **Cursor** or **Claude Code** installed
-- **D6E** instance running (local or remote)
+- **D6E** instance running (local or remote), and a workspace you are a
+  member of. Note your **workspace ID** — it is the UUID in every d6e
+  console URL (`/workspaces/{uuid}/...`)
 - **Docker** installed
 - This repository cloned
+
+For deployment steps that hit the d6e REST API directly you also need a
+Bearer token: copy the `auth-token` cookie from a logged-in d6e console
+session, or mint a long-lived API key via `POST /api/v1/api-keys` (see
+[TESTING.md](./TESTING.md#end-to-end-testing) for the exact commands).
+When you work through an AI agent chatting *inside* d6e, the MCP tools
+authenticate automatically and no token is needed.
 
 ## 🚀 5-Minute Quick Start
 
@@ -15,7 +24,7 @@ This guide shows you how to create and deploy your first D6E Docker STF **in 5 m
 
 ```bash
 # Clone the repository
-git clone https://gitlab.com/d6e-ai/d6e-docker-stf-skills.git
+git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
 cd d6e-docker-stf-skills
 
 # Open in Cursor
@@ -53,7 +62,7 @@ Using @skills/d6e-docker-stf-development/SKILL.md, create a simple Echo Docker S
 Requirements: same as above
 ```
 
-3. Review generated files:
+2. Review generated files:
    - `examples/echo-stf/main.py`
    - `examples/echo-stf/Dockerfile`
    - `examples/echo-stf/requirements.txt`
@@ -106,9 +115,10 @@ Paste this in Composer:
 Deploy echo-stf to D6E.
 
 Steps:
-1. Create STF with d6e_create_stf
-2. Register Docker image with d6e_create_stf_version (image: "echo-stf:latest")
-3. Create workflow with d6e_create_workflow
+1. Create STF + first version with d6e_create_stf
+   (version: "1.0.0", runtime: "docker", code: '{"image":"echo-stf:latest"}')
+2. Verify with d6e_describe_stf and d6e_instant_run_stf
+3. Create workflow with d6e_create_workflow (stf_steps use stf_version_id)
 4. Test execution with d6e_execute_workflow
 
 Use D6E MCP tools.
@@ -119,36 +129,43 @@ Use D6E MCP tools.
 In D6E web interface or MCP tools, execute:
 
 ```javascript
-// 1. Create STF
+// 1. Create STF (one call creates the STF and its first version)
 d6e_create_stf({
   name: "echo-stf",
   description: "Simple echo Docker STF",
-});
-// → Note the stf_id
-
-// 2. Create STF version
-d6e_create_stf_version({
-  stf_id: "{stf_id from above}",
   version: "1.0.0",
   runtime: "docker",
   code: '{"image":"echo-stf:latest"}',
 });
+// → Note the stf_id (and stf_version_id)
 
-// 3. Create workflow
+// 2. Verify: schema + one-off run (no workflow needed)
+d6e_describe_stf({ id: "{stf_id}" });
+d6e_instant_run_stf({
+  stf_id: "{stf_id}",
+  input: { operation: "echo", message: "Hello from D6E!" },
+});
+
+// 3. Create workflow (reference the version, map the inputs)
 d6e_create_workflow({
   name: "echo-workflow",
+  input_steps: [],
   stf_steps: [
     {
-      stf_id: "{stf_id}",
-      version: "1.0.0",
+      stf_version_id: "{stf_version_id}",
+      input_mappings: [
+        { source: { type: "Variable", value: "$input.operation" }, target: "operation" },
+        { source: { type: "Variable", value: "$input.message" }, target: "message" },
+      ],
     },
   ],
+  effect_steps: [],
 });
 // → Note the workflow_id
 
 // 4. Execute
 d6e_execute_workflow({
-  workflow_id: "{workflow_id}",
+  id: "{workflow_id}",
   input: {
     operation: "echo",
     message: "Hello from D6E!",
@@ -230,7 +247,7 @@ Include tests for each operation.
 
 Real Docker STF examples:
 
-- **[d6e-test-docker-skill](https://github.com/Senna46/d6e-test-docker-skill)** - Test Docker STF
+- **[examples/echo-stf](../examples/echo-stf/)** - Working echo STF in this repository (build & test with `./test-local.sh`)
 
 ---
 
@@ -260,23 +277,23 @@ Solutions:
 1. If using Docker Compose, check volume mounts
 2. Publish image to Docker Registry (see [PUBLISHING.md](./PUBLISHING.md))
 
-### Q: Policy errors occur
+### Q: Policy errors occur (POLICY_DENIED)
 
-For Docker STFs with database operations, policy configuration is required:
+For Docker STFs with database operations, policy configuration is required.
+Membership is passed directly via `stf_ids` (there is no separate
+"add member" tool):
 
 ```javascript
-// Create policy group
-d6e_create_policy_group({ name: "echo-stf-group" });
-
-// Add STF to group
-d6e_add_member_to_policy_group({
-  policy_group_id: "{policy_group_id}",
-  member_type: "stf",
-  member_id: "{stf_id}",
+// Create policy group with the STF as a member
+d6e_create_policy_group({
+  name: "echo-stf-group",
+  user_ids: [],
+  stf_ids: ["{stf_id}"],
 });
 
-// Create policy
+// Create policy (name is required)
 d6e_create_policy({
+  name: "echo-stf select messages",
   policy_group_id: "{policy_group_id}",
   table_name: "messages",
   operation: "select",
@@ -365,11 +382,15 @@ ENTRYPOINT ["python3", "main.py"]
 
 ### Using Agent Skills with Cursor
 
-Cursor automatically recognizes `.md` files in the `.cursor/rules/` directory and root. This repository includes:
+Install the skill once with the skills.sh CLI and Cursor picks it up
+automatically:
 
-- `d6e-docker-stf-development.md` - Docker STF development skill
+```bash
+npx skills add https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills --skill d6e-docker-stf-development
+```
 
-These are automatically loaded and can be referenced by the AI assistant.
+Alternatively, open this repository directly and reference
+`skills/d6e-docker-stf-development/SKILL.md` in your prompt.
 
 ### Using Skills with Claude Code
 
@@ -385,8 +406,8 @@ Using @skills/d6e-docker-stf-development/SKILL.md, implement [your requirements]
 
 For questions or issues:
 
-- **GitLab Issues**: https://gitlab.com/d6e-ai/d6e-docker-stf-skills/-/issues
-- **D6E Documentation**: https://github.com/d6e-ai/d6e
+- **GitLab Issues**: https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills/-/issues
+- **D6E Documentation**: https://gitlab.com/cauchye/d6e-ai/d6e
 
 ---
 

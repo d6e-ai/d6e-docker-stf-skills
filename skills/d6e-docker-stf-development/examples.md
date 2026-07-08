@@ -132,6 +132,13 @@ Fetches data from external API and stores in D6E database.
 
 **Use Case:** Fetch weather data from external API and store for reporting.
 
+> **Note on API keys:** passing an API key through `input` (as below)
+> means it appears in workflow inputs and logs. For production STFs,
+> prefer an environment variable declared in the Docker config's
+> `secret_keys` and stored via the STF secrets API — see
+> "Registering and Running in d6e" in SKILL.md. The code then reads
+> `os.getenv("WEATHER_API_KEY")` instead of `input`.
+
 **Input:**
 ```json
 {
@@ -471,14 +478,25 @@ def process(user_input, sources, api_client):
 
 ## Example 5: Multi-Step Workflow with Sources
 
-Uses output from previous workflow steps.
+Uses data provided by workflow **input steps** (`sources`) and explains
+how outputs of earlier STF steps arrive.
 
-**Use Case:** Fetch data, validate, then insert into database.
+**Use Case:** Fetch data via a workflow input step, validate it, then
+pass the valid records on to the next STF step.
 
 **Workflow Steps:**
-1. `data_fetcher`: Fetches raw data from external API
-2. `data_validator`: Validates the fetched data (this example)
-3. `data_inserter`: Inserts valid data into database
+1. Input step `data_fetcher` (type `Fetch`): retrieves raw data from an external API
+2. STF step `data_validator`: validates the fetched data (this example)
+3. STF step `data_inserter`: inserts valid data into database
+
+**How data reaches this STF:**
+
+- `sources.data_fetcher` is the **parsed JSON response body** of the
+  Fetch input step — the resolved value directly, with **no**
+  `{"output": ...}` wrapper.
+- Output from *earlier STF steps* does **not** appear in `sources`.
+  It is delivered through the workflow's `input_mappings` (e.g.
+  `$steps[0].valid`) and lands in this STF's `input` object.
 
 **Input (Step 2 - Validator):**
 ```json
@@ -488,14 +506,12 @@ Uses output from previous workflow steps.
   },
   "sources": {
     "data_fetcher": {
-      "output": {
-        "status": "success",
-        "records": [
-          {"id": 1, "name": "Product A", "price": 99.99, "stock": 50},
-          {"id": 2, "name": "Product B", "price": -10.00, "stock": 0},
-          {"id": 3, "name": "", "price": 149.99, "stock": 25}
-        ]
-      }
+      "status": "success",
+      "records": [
+        {"id": 1, "name": "Product A", "price": 99.99, "stock": 50},
+        {"id": 2, "name": "Product B", "price": -10.00, "stock": 0},
+        {"id": 3, "name": "", "price": 149.99, "stock": 25}
+      ]
     }
   }
 }
@@ -519,9 +535,9 @@ def validate_record(record):
     return errors
 
 def process(user_input, sources, context):
-    # Get data from previous step
-    fetcher_output = sources.get("data_fetcher", {}).get("output", {})
-    records = fetcher_output.get("records", [])
+    # sources maps the input step name directly to its resolved value
+    fetcher_result = sources.get("data_fetcher", {})
+    records = fetcher_result.get("records", [])
     
     if not records:
         raise ValueError("No records from data_fetcher step")
@@ -763,6 +779,154 @@ def process(user_input, sources, api_client):
     }
 ```
 
+## Implementing the `describe` Operation
+
+Every Docker STF should implement a `describe` operation that returns the input schema and available operations. Below is an example showing how to add `describe` to the Data Validation STF (Example 1).
+
+**Input:**
+```json
+{
+  "input": {
+    "operation": "describe"
+  }
+}
+```
+
+**Implementation:**
+```python
+def process_describe():
+    """Return the input schema and available operations."""
+    return {
+        "status": "success",
+        "operation": "describe",
+        "data": {
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["validate", "describe"],
+                        "description": "The operation to perform"
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "description": "Array of data objects to validate"
+                    },
+                    "rules": {
+                        "type": "object",
+                        "description": "Validation rules keyed by field name",
+                        "properties": {
+                            "<field_name>": {
+                                "type": "object",
+                                "properties": {
+                                    "required": {"type": "boolean"},
+                                    "min_length": {"type": "integer"},
+                                    "max_length": {"type": "integer"},
+                                    "pattern": {"type": "string"},
+                                    "min": {"type": "number"},
+                                    "max": {"type": "number"}
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": ["operation"]
+            },
+            "operations": {
+                "validate": {
+                    "description": "Validate data against configurable rules",
+                    "required": ["data", "rules"],
+                    "optional": []
+                },
+                "describe": {
+                    "description": "Returns the input schema and available operations",
+                    "required": [],
+                    "optional": []
+                }
+            }
+        }
+    }
+
+def process(user_input, sources, context):
+    operation = user_input.get("operation")
+
+    # Handle describe before any other validation
+    if operation == "describe":
+        return process_describe()
+
+    # Continue with normal processing...
+    if operation == "validate":
+        data = user_input.get("data", [])
+        rules = user_input.get("rules", {})
+        # ... validation logic ...
+```
+
+**Output:**
+```json
+{
+  "output": {
+    "status": "success",
+    "operation": "describe",
+    "data": {
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": ["validate", "describe"],
+            "description": "The operation to perform"
+          },
+          "data": {
+            "type": "array",
+            "items": {"type": "object"},
+            "description": "Array of data objects to validate"
+          },
+          "rules": {
+            "type": "object",
+            "description": "Validation rules keyed by field name"
+          }
+        },
+        "required": ["operation"]
+      },
+      "operations": {
+        "validate": {
+          "description": "Validate data against configurable rules",
+          "required": ["data", "rules"],
+          "optional": []
+        },
+        "describe": {
+          "description": "Returns the input schema and available operations",
+          "required": [],
+          "optional": []
+        }
+      }
+    }
+  }
+}
+```
+
+### Using `describe` in Workflow Creation
+
+When building workflows, always call `describe` first to discover the STF's capabilities:
+
+```bash
+# Step 1: Discover what the STF expects
+echo '{
+  "workspace_id": "test",
+  "stf_id": "test",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test",
+  "input": {"operation": "describe"},
+  "sources": {}
+}' | docker run --rm -i my-validation-stf:latest
+
+# Step 2: Based on the describe output, create the workflow with correct input_mappings
+```
+
+This approach eliminates guesswork and ensures all required parameters are mapped correctly.
+
 ## Testing Your Docker STF
 
 ### Local Test Script
@@ -775,8 +939,22 @@ set -e
 
 IMAGE_NAME="${1:-my-stf:latest}"
 
-# Test 1: Basic operation
-echo "Test 1: Basic operation"
+# Test 1: Describe operation (always test this first)
+echo "Test 1: Describe operation"
+echo '{
+  "workspace_id": "test-workspace",
+  "stf_id": "test-stf",
+  "caller": null,
+  "api_url": "http://localhost:8080",
+  "api_token": "test-token",
+  "input": {
+    "operation": "describe"
+  },
+  "sources": {}
+}' | docker run --rm -i $IMAGE_NAME
+
+# Test 2: Basic operation
+echo "Test 2: Basic operation"
 echo '{
   "workspace_id": "test-workspace",
   "stf_id": "test-stf",
@@ -789,8 +967,8 @@ echo '{
   "sources": {}
 }' | docker run --rm -i $IMAGE_NAME
 
-# Test 2: With data
-echo "Test 2: With data"
+# Test 3: With data
+echo "Test 3: With data"
 echo '{
   "workspace_id": "test-workspace",
   "stf_id": "test-stf",
