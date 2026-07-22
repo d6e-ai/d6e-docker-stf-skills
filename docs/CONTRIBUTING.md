@@ -66,7 +66,7 @@ We welcome the following types of contributions:
 ### Prerequisites
 
 - Git
-- GitLab account
+- GitHub account
 - Text editor (Cursor, VS Code, etc.)
 - Markdown preview tool (optional)
 
@@ -74,20 +74,20 @@ We welcome the following types of contributions:
 
 1. **Fork the repository**
 
-   - Open [d6e-docker-stf-skills](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills) on GitLab
+   - Open [d6e-docker-stf-skills](https://github.com/d6e-ai/d6e-docker-stf-skills) on GitHub
    - Click the "Fork" button in the top right
 
 2. **Clone**
 
    ```bash
-   git clone https://gitlab.com/YOUR_USERNAME/d6e-docker-stf-skills.git
+   git clone https://github.com/YOUR_USERNAME/d6e-docker-stf-skills.git
    cd d6e-docker-stf-skills
    ```
 
 3. **Add upstream**
 
    ```bash
-   git remote add upstream https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
+   git remote add upstream https://github.com/d6e-ai/d6e-docker-stf-skills.git
    ```
 
 4. **Fetch latest changes**
@@ -212,10 +212,10 @@ Add data validation example to AI prompts
 git push origin feature/your-feature-name
 ```
 
-### 6. Create a Merge Request
+### 6. Create a Pull Request
 
-1. Open your forked repository on GitLab
-2. Click "Create merge request"
+1. Open your forked repository on GitHub
+2. Click "Create pull request"
 3. Describe your changes:
 
 ```markdown
@@ -451,7 +451,7 @@ if __name__ == "__main__":
 
 ### Review Criteria
 
-Merge Requests are reviewed based on:
+Pull Requests are reviewed based on:
 
 1. **Accuracy**: Information is accurate and up-to-date
 2. **Clarity**: Explanations are easy to understand
@@ -478,8 +478,8 @@ Merge Requests are reviewed based on:
 
 ### How to Ask Questions
 
-- **GitLab Issues**: Bug reports, feature requests, and general questions
-- **Merge Requests**: Questions about specific changes
+- **GitHub Issues**: Bug reports, feature requests, and general questions
+- **Pull Requests**: Questions about specific changes
 
 ### If You Need Support
 
@@ -505,4 +505,4 @@ Your contributions help the entire D6E community.
 
 **Happy Contributing! 🎉**
 
-If you have any questions, feel free to create an [Issue](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills/-/issues)!
+If you have any questions, feel free to create an [Issue](https://github.com/d6e-ai/d6e-docker-stf-skills/issues)!

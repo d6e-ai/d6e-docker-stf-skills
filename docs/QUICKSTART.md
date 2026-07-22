@@ -24,7 +24,7 @@ authenticate automatically and no token is needed.
 
 ```bash
 # Clone the repository
-git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
+git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
 cd d6e-docker-stf-skills
 
 # Open in Cursor
@@ -386,7 +386,7 @@ Install the skill once with the skills.sh CLI and Cursor picks it up
 automatically:
 
 ```bash
-npx skills add https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills --skill d6e-docker-stf-development
+npx skills add d6e-ai/d6e-docker-stf-skills --skill d6e-docker-stf-development
 ```
 
 Alternatively, open this repository directly and reference
@@ -406,8 +406,8 @@ Using @skills/d6e-docker-stf-development/SKILL.md, implement [your requirements]
 
 For questions or issues:
 
-- **GitLab Issues**: https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills/-/issues
-- **D6E Documentation**: https://gitlab.com/cauchye/d6e-ai/d6e
+- **GitHub Issues**: https://github.com/d6e-ai/d6e-docker-stf-skills/issues
+- **D6E Documentation**: https://github.com/d6e-ai/d6e
 
 ---
 

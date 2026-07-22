@@ -32,7 +32,7 @@ Documents to read before or alongside this guide:
 
 ```bash
 # Clone the repository
-git clone https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills.git
+git clone https://github.com/d6e-ai/d6e-docker-stf-skills.git
 cd d6e-docker-stf-skills
 
 # Open in Cursor or load in Claude Code
@@ -472,8 +472,8 @@ Create a D6E Docker STF that processes data in batches of
 
 ### External Resources
 
-- [D6E Docker STF Skills Repository](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills) - This repository
-- [D6E Documentation](https://gitlab.com/cauchye/d6e-ai/d6e) - D6E platform documentation
+- [D6E Docker STF Skills Repository](https://github.com/d6e-ai/d6e-docker-stf-skills) - This repository
+- [D6E Documentation](https://github.com/d6e-ai/d6e) - D6E platform documentation
 - [examples/echo-stf](../examples/echo-stf/) - Real Docker STF sample in this repository
 - [Claude Agent Skills Guide](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) - Official Agent Skills guide
 - [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/) - Docker best practices
@@ -492,4 +492,4 @@ Create a D6E Docker STF that processes data in batches of
 
 **Happy Docker STF Building! 🎉**
 
-Have questions? Open an issue on the [D6E Docker STF Skills repository](https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills/-/issues).
+Have questions? Open an issue on the [D6E Docker STF Skills repository](https://github.com/d6e-ai/d6e-docker-stf-skills/issues).

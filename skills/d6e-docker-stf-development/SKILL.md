@@ -727,8 +727,8 @@ header — and all the `d6e_*` tools used below (`d6e_create_stf`,
 `d6e_describe_stf`, `d6e_instant_run_stf`, `d6e_create_workflow`, ...)
 become directly callable. Per-agent setup and the full
 local-development workflow are documented in
-[local-ai-development.md](https://gitlab.com/cauchye/d6e-ai/d6e-plugin-skills/-/blob/main/docs/local-ai-development.md)
-([日本語版](https://gitlab.com/cauchye/d6e-ai/d6e-plugin-skills/-/blob/main/docs/local-ai-development.ja.md)).
+[local-ai-development.md](https://github.com/d6e-ai/d6e-plugin-skills/blob/main/docs/local-ai-development.md)
+([日本語版](https://github.com/d6e-ai/d6e-plugin-skills/blob/main/docs/local-ai-development.ja.md)).
 
 ### Docker config JSON (the STF `code` field)
 
