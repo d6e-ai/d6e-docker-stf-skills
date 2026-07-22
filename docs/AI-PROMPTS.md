@@ -522,7 +522,7 @@ The prompts above can be customized to fit your requirements. Adjust the followi
 
 This prompt collection is continuously being improved. Please provide feedback through:
 
-- GitLab Issues: https://gitlab.com/cauchye/d6e-ai/d6e-docker-stf-skills/-/issues
-- Merge Requests: Add new prompt examples
+- GitHub Issues: https://github.com/d6e-ai/d6e-docker-stf-skills/issues
+- Pull Requests: Add new prompt examples
 
 Happy Docker STF Development! 🚀
