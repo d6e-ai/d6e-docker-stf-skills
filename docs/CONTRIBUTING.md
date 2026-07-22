@@ -451,7 +451,7 @@ if __name__ == "__main__":
 
 ### Review Criteria
 
-Merge Requests are reviewed based on:
+Pull Requests are reviewed based on:
 
 1. **Accuracy**: Information is accurate and up-to-date
 2. **Clarity**: Explanations are easy to understand
