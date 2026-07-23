@@ -1,6 +1,6 @@
 ---
 name: d6e-docker-stf-development
-description: Creates custom Docker-based State Transition Functions (STFs) for D6E platform workflows. Use when building containerized business logic for D6E, implementing data processing steps, or creating workflow functions that need database access. Handles JSON input/output, SQL API integration, and multi-language implementations (Python, Node.js, Go).
+description: Creates custom Docker-based State Transition Functions (STFs) for D6E platform workflows. Use when building containerized business logic for D6E, implementing data processing steps, or creating workflow functions that need database access. Handles JSON input/output, SQL-only api_token (AuthContext::InternalStf), concurrency limits (STF_DOCKER_MAX_CONCURRENT), execution timeouts, and multi-language implementations (Python, Node.js, Go).
 ---
 
 # D6E Docker STF Development
@@ -8,6 +8,18 @@ description: Creates custom Docker-based State Transition Functions (STFs) for D
 ## Overview
 
 Docker STFs are containerized applications that execute as workflow steps in D6E. They read JSON from stdin, process data with custom logic, access workspace databases via internal API, and output JSON to stdout.
+
+## References
+
+Focused guides (read before calling d6e APIs from a container):
+
+| Topic | Doc |
+|-------|-----|
+| **`api_token` is SQL-only** — not saas-proxy, files, or downloads | [references/external-apis.md](references/external-apis.md) |
+| Concurrency queue, 5 min timeout, 10 MB stdout, vs ~30 min intent jobs | [references/limits-and-timeouts.md](references/limits-and-timeouts.md) |
+| Binary files via workflow `File` input sources (base64 in `sources`) | [references/storage-and-files.md](references/storage-and-files.md) |
+| Full API schemas and language templates | [reference.md](reference.md) |
+| Additional patterns and examples | [examples.md](examples.md) |
 
 ## When to Use
 
@@ -48,7 +60,8 @@ Notes:
   override it with the `D6E_API_URL_FOR_DOCKER` env var). Never hardcode
   it — always read it from stdin.
 - `api_token` is a signed, per-execution token scoped to this
-  workspace + STF. Treat it as a secret; never log it.
+  workspace + STF. Treat it as a secret; never log it. **SQL endpoint
+  only** — see [references/external-apis.md](references/external-apis.md).
 - `sources` maps each workflow **input step name** directly to its
   resolved value — there is **no** `{"output": ...}` wrapper. The value
   shape depends on the input source type:
@@ -56,6 +69,8 @@ Notes:
   - `File` (JSON content type) → the parsed JSON value
   - `File` (text content type) → the file body as a string
   - `File` (binary) → `{ "filename", "content_type", "size", "data": "<base64>" }`
+    (delivered in `sources` — not via files API from the container; see
+    [references/storage-and-files.md](references/storage-and-files.md))
   - `Fetch` → the parsed JSON response body
 
 ### Output Format
@@ -91,41 +106,21 @@ human-readable failure reason on stderr, because that is what the user
 
 ### SQL API Access
 
-Execute SQL via internal API:
+The `api_token` authenticates as `AuthContext::InternalStf` and may call
+**only** the workspace SQL endpoint. Do not use it for saas-proxy, files, or
+other d6e APIs — see [references/external-apis.md](references/external-apis.md).
 
 **Endpoint:** `POST {api_url}/api/v1/workspaces/{workspace_id}/sql`
 
-**Headers:**
+**Headers:** `Authorization: Bearer {api_token}`, `X-Internal-Bypass: true`,
+`X-Workspace-ID: {workspace_id}`, `X-STF-ID: {stf_id}` (all from stdin).
 
-```
-Authorization: Bearer {api_token}
-X-Internal-Bypass: true
-X-Workspace-ID: {workspace_id}
-X-STF-ID: {stf_id}
-```
+**Request:** `{ "sql": "SELECT * FROM my_table LIMIT 10" }`
 
-`api_url`, `api_token`, `workspace_id`, and `stf_id` all come from the
-stdin input — never hardcode them.
+**Response:** `SELECT` → `{ "rows": [...] }`; DML → `{ "affected_rows": N }`.
 
-**Request:**
-
-```json
-{ "sql": "SELECT * FROM my_table LIMIT 10" }
-```
-
-**Response:**
-
-- `SELECT` → `{ "rows": [ {...}, ... ] }`
-- `INSERT` / `UPDATE` / `DELETE` → `{ "affected_rows": <number> }`
-
-**Restrictions:**
-
-- No DDL (CREATE, DROP, ALTER) — error code `DDL_FORBIDDEN`
-- Policy-controlled access — without an allow policy for the table +
-  operation, the call fails with error code `POLICY_DENIED`
-- Workspace scope only. Use plain table names (`leads`, `messages`);
-  d6e transparently rewrites them to the workspace's private schema.
-  Table names must be **23 characters or less**.
+**Restrictions:** no DDL (`DDL_FORBIDDEN`); policy allow required
+(`POLICY_DENIED`); plain table names ≤ 23 chars (workspace-scoped rewrite).
 
 ## Quick Start
 
@@ -918,14 +913,15 @@ object, e.g. `{"owner_id": {"$eq": {"$var": "user_id"}}}`), not a SQL
 
 ### Execution limits
 
-| Limit          | Default   | Operator override            |
-| -------------- | --------- | ----------------------------- |
-| Execution time | 5 minutes | `STF_DOCKER_TIMEOUT_SECS`     |
-| stdout/stderr  | 10 MB     | `STF_DOCKER_MAX_OUTPUT_BYTES` |
+Default: **5 min** per container after concurrency slot acquire
+(`STF_DOCKER_TIMEOUT_SECS`), **10 MB** stdout/stderr, **2** simultaneous
+containers per API process (`STF_DOCKER_MAX_CONCURRENT`). Queue wait does
+not count toward the 5-minute budget. Full detail:
+[references/limits-and-timeouts.md](references/limits-and-timeouts.md).
 
-Containers run with `--rm -i --network=bridge` and
-`--add-host=host.docker.internal:host-gateway`, so outbound network
-access is available for external API calls.
+Containers run with `--network=bridge` and
+`host.docker.internal` for SQL callbacks; outbound HTTP to **public**
+third-party APIs is allowed (not d6e saas-proxy via `api_token`).
 
 ## Troubleshooting
 
@@ -1332,6 +1328,9 @@ echo '{
 
 For detailed information:
 
+- API token boundary and external SaaS patterns: [references/external-apis.md](references/external-apis.md)
+- Limits, concurrency, and timeouts: [references/limits-and-timeouts.md](references/limits-and-timeouts.md)
+- File/binary inputs via workflow sources: [references/storage-and-files.md](references/storage-and-files.md)
 - Complete API reference: [reference.md](reference.md)
 - More implementation examples: [examples.md](examples.md)
 - Quick start guide: [../docs/QUICKSTART.md](../../docs/QUICKSTART.md)
