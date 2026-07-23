@@ -15,8 +15,11 @@ Focused guides (read before calling d6e APIs from a container):
 
 | Topic | Doc |
 |-------|-----|
+| **`sources` = input steps only** — not `$steps[n]` / prior STF output | [references/stdin-sources-vs-steps.md](references/stdin-sources-vs-steps.md) |
+| Instant-run / describe vs workflow — User vs Stf SQL policies, `caller: null` | [references/instant-run-vs-production.md](references/instant-run-vs-production.md) |
+| `POLICY_DENIED`, `DDL_FORBIDDEN`, 23-char tables, `uuidv7()`, modql | [references/sql-errors-and-policy.md](references/sql-errors-and-policy.md) |
 | **`api_token` is SQL-only** — not saas-proxy, files, or downloads | [references/external-apis.md](references/external-apis.md) |
-| Concurrency queue, 5 min timeout, 10 MB stdout, vs ~30 min intent jobs | [references/limits-and-timeouts.md](references/limits-and-timeouts.md) |
+| Concurrency queue, 5 min timeout, 10 MB stdout, stdin OOM, `secret_keys` | [references/limits-and-timeouts.md](references/limits-and-timeouts.md) |
 | Binary files via workflow `File` input sources (base64 in `sources`) | [references/storage-and-files.md](references/storage-and-files.md) |
 | Full API schemas and language templates | [reference.md](reference.md) |
 | Additional patterns and examples | [examples.md](examples.md) |
@@ -63,8 +66,11 @@ Notes:
   workspace + STF. Treat it as a secret; never log it. **SQL endpoint
   only** — see [references/external-apis.md](references/external-apis.md).
 - `sources` maps each workflow **input step name** directly to its
-  resolved value — there is **no** `{"output": ...}` wrapper. The value
-  shape depends on the input source type:
+  resolved value — there is **no** `{"output": ...}` wrapper. **Previous
+  STF step outputs are not in `sources`.** Use workflow `input_mappings`
+  with `$steps[n]` (Effect / JS STF layer); mapped fields arrive in `input`.
+  See [references/stdin-sources-vs-steps.md](references/stdin-sources-vs-steps.md).
+  The value shape depends on the input source type:
   - `Library` → `{ "code": "...", "types": "...", "version": "..." }`
   - `File` (JSON content type) → the parsed JSON value
   - `File` (text content type) → the file body as a string
@@ -123,6 +129,12 @@ other d6e APIs — see [references/external-apis.md](references/external-apis.md
 (`POLICY_DENIED`); plain table names ≤ 23 chars (workspace-scoped rewrite).
 
 ## Quick Start
+
+**Before wiring workflows:** stdin `sources` contains **input step** results
+only (File, Fetch, Library, …). Data from an earlier STF step is mapped via
+`$steps[n]` into **`input`**, not into `sources`. Misreading this is the most
+common integration bug — see
+[references/stdin-sources-vs-steps.md](references/stdin-sources-vs-steps.md).
 
 ### Python Implementation
 
@@ -1328,8 +1340,11 @@ echo '{
 
 For detailed information:
 
+- Stdin `sources` vs `$steps[n]` / prior STF output: [references/stdin-sources-vs-steps.md](references/stdin-sources-vs-steps.md)
+- Instant-run, describe, and production policy differences: [references/instant-run-vs-production.md](references/instant-run-vs-production.md)
+- SQL errors, naming, and STF policies: [references/sql-errors-and-policy.md](references/sql-errors-and-policy.md)
 - API token boundary and external SaaS patterns: [references/external-apis.md](references/external-apis.md)
-- Limits, concurrency, and timeouts: [references/limits-and-timeouts.md](references/limits-and-timeouts.md)
+- Limits, concurrency, timeouts, stdin OOM, secrets: [references/limits-and-timeouts.md](references/limits-and-timeouts.md)
 - File/binary inputs via workflow sources: [references/storage-and-files.md](references/storage-and-files.md)
 - Complete API reference: [reference.md](reference.md)
 - More implementation examples: [examples.md](examples.md)

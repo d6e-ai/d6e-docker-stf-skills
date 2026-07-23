@@ -82,6 +82,23 @@ Pass results into the Docker STF via workflow **input sources** (`sources` on
 stdin). See [storage-and-files.md](./storage-and-files.md) for file/binary
 inputs.
 
+**To put SaaS binaries into a Docker STF, use a File input step (pre-uploaded
+or downloaded into workspace storage) — not `api_token`.** The container cannot
+call `saas-proxy-download` or files download APIs. Cross-package recipes:
+
+| Step | Skill / doc |
+|------|-------------|
+| Download SaaS file into storage (MCP / REST) | [d6e-plugin-skills — saas-and-downloads.md](https://github.com/d6e-ai/d6e-plugin-skills/blob/main/skills/d6e-plugin-development/references/saas-and-downloads.md) |
+| End-to-end binary → Docker STF wiring | [d6e-plugin-skills — cross-package-recipes.md](https://github.com/d6e-ai/d6e-plugin-skills/blob/main/skills/d6e-plugin-development/references/cross-package-recipes.md) |
+| `saas-proxy-download` REST details | [d6e-custom-frontend-skills — saas-proxy-download.md](https://github.com/d6e-ai/d6e-custom-frontend-skills/blob/main/skills/d6e-workspace-api-client/references/saas-proxy-download.md) |
+| File storage + proxy patterns | [d6e-custom-frontend-skills](https://github.com/d6e-ai/d6e-custom-frontend-skills) — `d6e-workspace-api-client` skill |
+
+Typical flow: upstream MCP/Effect/custom-frontend step persists the file →
+workflow **File** input step → base64 envelope in Docker stdin `sources` (see
+[storage-and-files.md](./storage-and-files.md)). Previous STF JSON output does
+**not** substitute for File sources — see
+[stdin-sources-vs-steps.md](./stdin-sources-vs-steps.md).
+
 ### 2. Direct outbound HTTP from the container
 
 Containers run with `--network=bridge`, so the STF may call **public** external
